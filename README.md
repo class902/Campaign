@@ -1,600 +1,267 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAJU ❤️KAJAL G CARE CENTER - Professional Nursing Care Services</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+import React, { useState, useEffect } from 'react';
+import { Calculator, CreditCard, Coins } from 'lucide-react';
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
+export default function CreditCardRewardCalculator() {
+  const [transactionValue, setTransactionValue] = useState('1000');
+  const [pointValue, setPointValue] = useState('1');
+  const [rewardPoints, setRewardPoints] = useState('10');
+  const [spendingThreshold, setSpendingThreshold] = useState('200');
+  
+  const [results, setResults] = useState({
+    totalPoints: 0,
+    totalRewardValue: 0,
+    effectiveRewardRate: 0
+  });
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
+  useEffect(() => {
+    calculateRewards();
+  }, [transactionValue, pointValue, rewardPoints, spendingThreshold]);
 
-        /* Header */
-        header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 1000;
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-        }
+  const calculateRewards = () => {
+    const transaction = parseFloat(transactionValue) || 0;
+    const perPointValue = parseFloat(pointValue) || 0;
+    const rewardPointsNum = parseFloat(rewardPoints) || 0;
+    const spendThreshold = parseFloat(spendingThreshold) || 1;
 
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0;
-        }
+    // Calculate total points earned
+    const totalPoints = Math.floor((transaction / spendThreshold) * rewardPointsNum);
+    
+    // Calculate total reward value in whole rupees only
+    const totalRewardValue = Math.floor(totalPoints * perPointValue);
+    
+    // Calculate effective reward rate as percentage
+    const effectiveRewardRate = transaction > 0 ? (totalRewardValue / transaction) * 100 : 0;
 
-        .logo {
-            font-size: 1.8rem;
-            font-weight: bold;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+    setResults({
+      totalPoints,
+      totalRewardValue,
+      effectiveRewardRate: Math.round(effectiveRewardRate * 100) / 100
+    });
+  };
 
-        .nav-links {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
+  const presetCards = [
+    { name: 'HDFC Millennia', points: '10', threshold: '200', value: '0.25' },
+    { name: 'SBI SimplyCLICK', points: '10', threshold: '100', value: '0.25' },
+    { name: 'ICICI Amazon Pay', points: '1', threshold: '100', value: '100' },
+    { name: 'Axis Flipkart', points: '4', threshold: '200', value: '0.25' },
+    { name: 'Custom', points: rewardPoints, threshold: spendingThreshold, value: pointValue }
+  ];
 
-        .nav-links a {
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
+  const loadPreset = (preset) => {
+    if (preset.name !== 'Custom') {
+      setRewardPoints(preset.points);
+      setSpendingThreshold(preset.threshold);
+      setPointValue(preset.value);
+    }
+  };
 
-        .nav-links a:hover {
-            color: #667eea;
-        }
+  const transactionPresets = ['500', '1000', '2000', '5000', '10000'];
 
-        .emergency-btn {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 25px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .emergency-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        /* Hero Section */
-        .hero {
-            background: url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80') center/cover;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            margin-top: 80px;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.4);
-        }
-
-        .hero-content {
-            text-align: center;
-            color: white;
-            z-index: 2;
-            max-width: 800px;
-        }
-
-        .hero h1 {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-        }
-
-        .cta-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 30px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid white;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Founders Section */
-        .founders {
-            padding: 80px 0;
-            background: rgba(255, 255, 255, 0.95);
-        }
-
-        .founders h2 {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 3rem;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .founders-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem;
-            margin-top: 2rem;
-        }
-
-        .founder-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s;
-        }
-
-        .founder-card:hover {
-            transform: translateY(-10px);
-        }
-
-        .founder-img {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            margin: 0 auto 1.5rem;
-            object-fit: cover;
-            border: 5px solid #667eea;
-        }
-
-        .founder-card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            color: #333;
-        }
-
-        .founder-card .title {
-            color: #667eea;
-            font-weight: bold;
-            margin-bottom: 1rem;
-        }
-
-        /* Services Section */
-        .services {
-            padding: 80px 0;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .services h2 {
-            text-align: center;
-            font-size: 2.5rem;
-            color: white;
-            margin-bottom: 3rem;
-        }
-
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .service-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 2rem;
-            border-radius: 20px;
-            text-align: center;
-            transition: transform 0.3s;
-        }
-
-        .service-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .service-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        /* Booking Section */
-        .booking {
-            padding: 80px 0;
-            background: rgba(255, 255, 255, 0.95);
-        }
-
-        .booking h2 {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 3rem;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .booking-form {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        /* Contact Section */
-        .contact {
-            padding: 80px 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .contact h2 {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 3rem;
-        }
-
-        .contact-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem;
-        }
-
-        .contact-info {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2rem;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-        }
-
-        .contact-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .contact-icon {
-            font-size: 1.5rem;
-            margin-right: 1rem;
-            width: 40px;
-        }
-
-        /* Footer */
-        footer {
-            background: #333;
-            color: white;
-            text-align: center;
-            padding: 2rem 0;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .cta-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .founder-img {
-                width: 150px;
-                height: 150px;
-            }
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .fade-in {
-            animation: fadeInUp 0.8s ease-out;
-        }
-
-        /* Status Indicators */
-        .status-online {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            background: #4CAF50;
-            border-radius: 50%;
-            margin-left: 10px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <header>
-        <nav class="container">
-            <div class="logo">RAJU ❤️KAJAL G CARE CENTER</div>
-            <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#founders">Our Team</a></li>
-                <li><a href="#services">Services</a></li>
-                <li><a href="#booking">Book Now</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-            <button class="emergency-btn" onclick="callEmergency()">🚨 Emergency: 7877675227</button>
-        </nav>
-    </header>
-
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-        <div class="hero-content fade-in">
-            <h1>RAJU ❤️KAJAL G CARE CENTER</h1>
-            <p>Professional Nursing Care Services with Compassion and Excellence</p>
-            <p>Providing 24/7 Healthcare Support in Udaipur</p>
-            <div class="cta-buttons">
-                <a href="#booking" class="btn btn-primary">Book Appointment</a>
-                <a href="#contact" class="btn btn-secondary">Contact Us</a>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-3xl shadow-xl p-8">
+          <div className="text-center mb-8">
+            <div className="flex justify-center items-center gap-3 mb-4">
+              <CreditCard className="h-8 w-8 text-indigo-600" />
+              <Calculator className="h-8 w-8 text-indigo-600" />
             </div>
-        </div>
-    </section>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              Credit Card Reward Calculator
+            </h1>
+            <p className="text-gray-600">
+              Calculate your rewards in whole rupees - Simple & Fast
+            </p>
+          </div>
 
-    <!-- Founders Section -->
-    <section id="founders" class="founders">
-        <div class="container">
-            <h2>Meet Our Co-Founders</h2>
-            <div class="founders-grid">
-                <div class="founder-card fade-in">
-                    <img src="https://i.ibb.co/cXMpYF5K/kajal.jpg" alt="Dr. Kajal G" class="founder-img" onerror="this.src='https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80'">
-                    <h3>Dr. Kajal G</h3>
-                    <p class="title">Co-Founder & Chief Nursing Officer</p>
-                    <p>Dedicated healthcare professional with years of experience in providing compassionate nursing care. Specializes in patient care management and healthcare service excellence.</p>
-                    <div class="status-online"></div>
-                    <span>Available Now</span>
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Input Section */}
+            <div className="space-y-6">              
+              {/* Transaction Amount */}
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  Transaction Amount (₹)
+                </label>
+                <div className="space-y-3">
+                  <input
+                    type="number"
+                    value={transactionValue}
+                    onChange={(e) => setTransactionValue(e.target.value)}
+                    className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    placeholder="Enter amount"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {transactionPresets.map(amount => (
+                      <button
+                        key={amount}
+                        onClick={() => setTransactionValue(amount)}
+                        className={`px-4 py-2 rounded-lg border transition-all ${
+                          transactionValue === amount 
+                            ? 'bg-indigo-600 text-white border-indigo-600' 
+                            : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-indigo-50'
+                        }`}
+                      >
+                        ₹{amount}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div class="founder-card fade-in">
-                    <img src="https://i.ibb.co/JF8wpxm7/raju.jpg" alt="Dr. Raju Kumawat" class="founder-img" onerror="this.src='https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80'">
-                    <h3>Dr. Raju Kumawat</h3>
-                    <p class="title">Co-Founder & Director</p>
-                    <p>Experienced healthcare administrator and medical professional. Committed to delivering high-quality healthcare services and building a trusted healthcare network in Udaipur.</p>
-                    <div class="status-online"></div>
-                    <span>Available Now</span>
+              </div>
+
+              {/* Card Dropdown */}
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  Select Credit Card
+                </label>
+                <select
+                  onChange={(e) => {
+                    const selectedCard = presetCards.find(card => card.name === e.target.value);
+                    if (selectedCard) loadPreset(selectedCard);
+                  }}
+                  className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white"
+                  defaultValue="Custom"
+                >
+                  {presetCards.map(card => (
+                    <option key={card.name} value={card.name}>
+                      {card.name === 'Custom' ? 
+                        'Custom Card Settings' : 
+                        `${card.name} - ${card.points} pts per ₹${card.threshold}`
+                      }
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Dynamic Reward Structure */}
+              <div className="bg-indigo-50 rounded-2xl p-6 border-2 border-indigo-200">
+                <label className="block text-lg font-semibold text-gray-700 mb-4">
+                  <Coins className="inline h-5 w-5 mr-2" />
+                  Reward Structure
+                </label>
+                <div className="bg-white rounded-xl p-4 border border-indigo-200">
+                  <div className="text-center text-lg text-gray-700 mb-4">
+                    <span className="text-gray-600">Earn </span>
+                    <input
+                      type="number"
+                      value={rewardPoints}
+                      onChange={(e) => setRewardPoints(e.target.value)}
+                      className="w-16 px-2 py-1 mx-1 text-center text-xl font-bold text-indigo-600 border-2 border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    <span className="text-gray-600"> points on every ₹</span>
+                    <input
+                      type="number"
+                      value={spendingThreshold}
+                      onChange={(e) => setSpendingThreshold(e.target.value)}
+                      className="w-20 px-2 py-1 mx-1 text-center text-xl font-bold text-indigo-600 border-2 border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    <span className="text-gray-600"> spent</span>
+                  </div>
+                  
+                  <div className="text-center">
+                    <span className="text-gray-600">Each point = ₹</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={pointValue}
+                      onChange={(e) => setPointValue(e.target.value)}
+                      className="w-24 px-2 py-1 mx-1 text-center text-xl font-bold text-green-600 border-2 border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
                 </div>
+              </div>
             </div>
-        </div>
-    </section>
 
-    <!-- Services Section -->
-    <section id="services" class="services">
-        <div class="container">
-            <h2>Our Healthcare Services</h2>
-            <div class="services-grid">
-                <div class="service-card">
-                    <div class="service-icon">🏥</div>
-                    <h3>Home Nursing Care</h3>
-                    <p>Professional nursing services at your home including medication management, wound care, and health monitoring.</p>
+            {/* Results Section */}
+            <div className="space-y-6">
+              {/* Main Results */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200">
+                <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+                  💰 Your Rewards
+                </h2>
+                
+                <div className="space-y-6">
+                  <div className="text-center bg-white rounded-xl p-4 border border-green-200">
+                    <div className="text-sm text-gray-600 mb-1">Points Earned</div>
+                    <div className="text-3xl font-bold text-blue-600">
+                      {results.totalPoints.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">points</div>
+                  </div>
+                  
+                  <div className="text-center bg-white rounded-xl p-4 border border-green-200">
+                    <div className="text-sm text-gray-600 mb-1">Reward Value</div>
+                    <div className="text-4xl font-bold text-green-600">
+                      ₹{results.totalRewardValue.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">in whole rupees</div>
+                  </div>
+                  
+                  <div className="text-center bg-white rounded-xl p-4 border border-green-200">
+                    <div className="text-sm text-gray-600 mb-1">Reward Rate</div>
+                    <div className="text-3xl font-bold text-purple-600">
+                      {results.effectiveRewardRate}%
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">return on spending</div>
+                  </div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">👴</div>
-                    <h3>Elderly Care</h3>
-                    <p>Specialized care for senior citizens including daily living assistance, health monitoring, and companionship services.</p>
+              </div>
+
+              {/* Quick Calculation */}
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                <h3 className="font-semibold text-gray-700 mb-4 text-center">
+                  📊 How it's calculated
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="bg-white p-3 rounded-lg border">
+                    <div className="font-medium text-gray-700">Step 1: Calculate Points</div>
+                    <div className="text-gray-600">
+                      ₹{transactionValue || 0} ÷ ₹{spendingThreshold || 1} × {rewardPoints || 0} = <span className="font-bold text-blue-600">{results.totalPoints} points</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-3 rounded-lg border">
+                    <div className="font-medium text-gray-700">Step 2: Convert to Rupees</div>
+                    <div className="text-gray-600">
+                      {results.totalPoints} points × ₹{pointValue || 0} = <span className="font-bold text-green-600">₹{results.totalRewardValue}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-3 rounded-lg border">
+                    <div className="font-medium text-gray-700">Step 3: Calculate Rate</div>
+                    <div className="text-gray-600">
+                      ₹{results.totalRewardValue} ÷ ₹{transactionValue || 1} × 100 = <span className="font-bold text-purple-600">{results.effectiveRewardRate}%</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">🤱</div>
-                    <h3>Post-Operative Care</h3>
-                    <p>Expert post-surgery care including wound management, pain management, and recovery monitoring.</p>
+              </div>
+
+              {/* Quick Tips */}
+              <div className="bg-blue-50 rounded-2xl p-6 border border-blue-200">
+                <h3 className="font-semibold text-gray-700 mb-3 text-center">
+                  💡 Quick Guide
+                </h3>
+                <div className="text-sm text-gray-700 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span><strong>Excellent:</strong> 2%+ reward rate</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span><strong>Good:</strong> 1-2% reward rate</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span><strong>Average:</strong> Below 1% reward rate</span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-2 p-2 bg-white rounded">
+                    <strong>Note:</strong> Only whole rupees are calculated and displayed. Fractional amounts are rounded down.
+                  </div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">💉</div>
-                    <h3>Medical Procedures</h3>
-                    <p>Professional medical procedures including injections, IV therapy, catheter care, and health assessments.</p>
-                </div>
-                <div class="service-card">
-                    <div class="service-icon">🚑</div>
-                    <h3>Emergency Response</h3>
-                    <p>24/7 emergency nursing services and immediate medical response for urgent healthcare needs.</p>
-                </div>
-                <div class="service-card">
-                    <div class="service-icon">📋</div>
-                    <h3>Health Monitoring</h3>
-                    <p>Regular health check-ups, vital signs monitoring, and chronic disease management services.</p>
-                </div>
+              </div>
             </div>
+          </div>
         </div>
-    </section>
-
-    <!-- Booking Section -->
-    <section id="booking" class="booking">
-        <div class="container">
-            <h2>Book Your Appointment</h2>
-            <form class="booking-form" onsubmit="submitBooking(event)">
-                <div class="form-group">
-                    <label for="name">Full Name *</label>
-                    <input type="text" id="name" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="phone">Phone Number *</label>
-                    <input type="tel" id="phone" name="phone" required>
-                </div>
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email">
-                </div>
-                <div class="form-group">
-                    <label for="service">Service Required *</label>
-                    <select id="service" name="service" required>
-                        <option value="">Select a Service</option>
-                        <option value="home-nursing">Home Nursing Care</option>
-                        <option value="elderly-care">Elderly Care</option>
-                        <option value="post-operative">Post-Operative Care</option>
-                        <option value="medical-procedures">Medical Procedures</option>
-                        <option value="emergency">Emergency Response</option>
-                        <option value="health-monitoring">Health Monitoring</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="date">Preferred Date *</label>
-                    <input type="date" id="date" name="date" required>
-                </div>
-                <div class="form-group">
-                    <label for="time">Preferred Time *</label>
-                    <input type="time" id="time" name="time" required>
-                </div>
-                <div class="form-group">
-                    <label for="address">Address *</label>
-                    <textarea id="address" name="address" rows="3" placeholder="Please provide your complete address" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="notes">Additional Notes</label>
-                    <textarea id="notes" name="notes" rows="3" placeholder="Any specific requirements or medical conditions we should know about"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Book Appointment</button>
-            </form>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="contact">
-        <div class="container">
-            <h2>Contact Us</h2>
-            <div class="contact-grid">
-                <div class="contact-info">
-                    <h3>Get In Touch</h3>
-                    <div class="contact-item">
-                        <div class="contact-icon">👨‍⚕️</div>
-                        <div>
-                            <strong>Contact Person:</strong><br>
-                            RAJU KUMAWAT<br>
-                            (Husband of Dr. Kajal G)
-                        </div>
-                    </div>
-                    <div class="contact-item">
-                        <div class="contact-icon">📱</div>
-                        <div>
-                            <strong>Mobile:</strong><br>
-                            <a href="tel:7877675227" style="color: white;">7877675227</a>
-                        </div>
-                    </div>
-                    <div class="contact-item">
-                        <div class="contact-icon">📍</div>
-                        <div>
-                            <strong>Address:</strong><br>
-                            Dore Nagar, Azad Nagar<br>
-                            Hiran Magri, Udaipur 313001<br>
-                            Rajasthan, India
-                        </div>
-                    </div>
-                    <div class="contact-item">
-                        <div class="contact-icon">⏰</div>
-                        <div>
-                            <strong>Available:</strong><br>
-                            24/7 Emergency Services<br>
-                            Regular Hours: 6:00 AM - 10:00 PM
-                        </div>
-                    </div>
-                </div>
-                <div class="contact-info">
-                    <h3>Quick Contact Form</h3>
-                    <form onsubmit="submitContact(event)">
-                        <div class="form-group">
-                            <input type="text" placeholder="Your Name" required style="margin-bottom: 1rem;">
-                        </div>
-                        <div class="form-group">
-                            <input type="tel" placeholder="Your Phone" required style="margin-bottom: 1rem;">
-     
+      </div>
+    </div>
+  );
+}
