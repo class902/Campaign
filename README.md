@@ -11,14 +11,12 @@
         font-family: sans-serif;
         background-color: #f9f9f9;
       }
-
       .iframe-container {
         position: relative;
         width: 100%;
         padding-top: 150%; /* Adjust height ratio for mobile */
         overflow: hidden;
       }
-
       .iframe-container iframe {
         position: absolute;
         top: 0;
@@ -39,7 +37,6 @@
         Loading…
       </iframe>
     </div>
-
     <script>
       let loadCount = 0;
       document.getElementById("gform").onload = function () {
