@@ -1,0 +1,2959 @@
+<html lang="en"><head><script>(function(firebaseConfig, initialAuthToken, appId) {
+        window.__firebase_config = firebaseConfig;
+        window.__initial_auth_token = initialAuthToken;
+        window.__app_id = appId;
+            })("\n{\n  \"apiKey\": \"AIzaSyCqyCcs2R2e7AegGjvFAwG98wlamtbHvZY\",\n  \"authDomain\": \"bard-frontend.firebaseapp.com\",\n  \"projectId\": \"bard-frontend\",\n  \"storageBucket\": \"bard-frontend.firebasestorage.app\",\n  \"messagingSenderId\": \"175205271074\",\n  \"appId\": \"1:175205271074:web:2b7bd4d34d33bf38e6ec7b\"\n}\n","eyJhbGciOiJSUzI1NiIsImtpZCI6ImZiMjBhNDYyN2NmNDRiZDBhZGIwMjQyNTBkY2MxNTk0YmRkMGE0NjgiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiJmaXJlYmFzZS1hZG1pbnNkay1mYnN2Y0BiYXJkLWZyb250ZW5kLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwiYXVkIjoiaHR0cHM6XC9cL2lkZW50aXR5dG9vbGtpdC5nb29nbGVhcGlzLmNvbVwvZ29vZ2xlLmlkZW50aXR5LmlkZW50aXR5dG9vbGtpdC52MS5JZGVudGl0eVRvb2xraXQiLCJ1aWQiOiIwOTE5ODkzMDcyMjMzOTQ3ODMyNSIsImlzcyI6ImZpcmViYXNlLWFkbWluc2RrLWZic3ZjQGJhcmQtZnJvbnRlbmQuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJjbGFpbXMiOnsiYXBwSWQiOiJjXzk5ZWU1Y2JjNGUwMmQ1NDVfbG9hbl9jYWxjdWxhdG9yX3N1aXRlLTI3OCJ9LCJleHAiOjE3NTM0NTYzMDksImlhdCI6MTc1MzQ1MjcwOSwiYWxnIjoiUlMyNTYifQ.gIAIGC05S_84TnYqkmM5G-ZaBAiCWiQhyRt99axnHsn0R7EzmjGzBy-R3JPJ95_E0MjlRgax_CxnWzhqxzvf0MO-aoBBxOyb4wJ50Bo0JfDT20bSbxy7Z7vrE5GuEeesLA_SfCRxma6LHmoYObnVA854GVl-n1aalxl5a4ojg1OBJHyEg6gOlINou55g5RD4seefVG84S-2S4qorQFstOYd17Rf4AZCCNC_6-auxpEJZEgz0YJ_dyYrB5FUoRGYnXN_b_grRyYifxOdhSv_N0Dv39X1_RsN15pWcMWfwbWP_z4MgI8EhjJOrU8qjFb1NDCA-i8Y1y2W8HwMVGyxfhg","c_99ee5cbc4e02d545_loan_calculator_suite-278")</script><script>(function() {
+  // Ensure this script is executed only once
+  if (window.firebaseAuthBridgeScriptLoaded) {
+    return;
+  }
+  window.firebaseAuthBridgeScriptLoaded = true;
+
+  let nextTokenPromiseId = 0;
+
+  // Stores { resolve, reject } for ongoing token requests
+  const pendingTokenPromises = {};
+
+  // Listen for messages from the Host Application
+  window.addEventListener('message', function(event) {
+
+    const messageData = event.data;
+
+  if (messageData && messageData.type === 'RESOLVE_NEW_FIREBASE_TOKEN') {
+      const { success, token, error, promiseId } = messageData ?? {};
+      if (pendingTokenPromises[promiseId]) {
+        if (success) {
+          pendingTokenPromises[promiseId].resolve(token);
+        } else {
+          pendingTokenPromises[promiseId].reject(new Error(error || 'Token refresh failed from host.'));
+        }
+        delete pendingTokenPromises[promiseId];
+      }
+    }
+  });
+
+  // Expose a function for the Generated App to request a new Firebase token
+  window.requestNewFirebaseToken = function() {
+    const currentPromiseId = nextTokenPromiseId++;
+    const promise = new Promise((resolve, reject) => {
+      pendingTokenPromises[currentPromiseId] = { resolve, reject };
+    });
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'REQUEST_NEW_FIREBASE_TOKEN',
+        promiseId: currentPromiseId
+      }, '*');
+    } else {
+      pendingTokenPromises[currentPromiseId].reject(new Error('No parent window to request token from.'));
+      delete pendingTokenPromises[currentPromiseId];
+    }
+    return promise;
+  };
+})();</script><script>
+let realOriginalGetUserMedia = null;
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  realOriginalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+}
+
+(function() {
+  if (navigator.mediaDevices && navigator.mediaDevices.__proto__) {
+    try {
+      Object.defineProperty(navigator.mediaDevices.__proto__, 'getUserMedia', {
+        get: function() {
+          return undefined; // Or throw an error
+        },
+        configurable: false
+      });
+    } catch (error) {
+      console.error("Error defining prototype getter:", error);
+    }
+  }
+})();
+
+(function() {
+  const pendingMediaResolvers = {};
+  let nextMediaPromiseId = 0;
+
+  function requestMediaPermissions(constraints) {
+    const mediaPromiseId = nextMediaPromiseId++;
+    const promise = new Promise((resolve, reject) => {
+      pendingMediaResolvers[mediaPromiseId] = (granted) => {
+        delete pendingMediaResolvers[mediaPromiseId];
+        resolve(granted);
+      };
+    });
+
+    window.parent.postMessage({
+      type: 'requestMediaPermission',
+      constraints: constraints,
+      promiseId: mediaPromiseId,
+    }, '*');
+
+    return promise;
+  }
+
+  let originalGetUserMedia = realOriginalGetUserMedia;
+
+  function interceptGetUserMedia() {
+    if (navigator.mediaDevices) {
+      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+        value: function(constraints) {
+          return requestMediaPermissions(constraints).then((granted) => {
+            if (granted) {
+              if (originalGetUserMedia) {
+                return originalGetUserMedia(constraints);
+              } else {
+                throw new Error("Original getUserMedia not available.");
+              }
+            } else {
+              throw new DOMException('Permission denied', 'NotAllowedError');
+            }
+          });
+        },
+        writable: false,
+        configurable: false
+      });
+    }
+  }
+
+  interceptGetUserMedia();
+
+  const observer = new MutationObserver(function(mutationsList, observer) {
+    for (const mutation of mutationsList) {
+      if (mutation.type === 'reconfigured' && mutation.name === 'getUserMedia' && mutation.object === navigator.mediaDevices) {
+        interceptGetUserMedia();
+      } else if (mutation.type === 'attributes' && mutation.attributeName === 'getUserMedia' && mutation.target === navigator.mediaDevices) {
+        interceptGetUserMedia();
+      } else if (mutation.type === 'childList' && mutation.addedNodes) {
+        mutation.addedNodes.forEach(node => {
+          if (node === navigator.mediaDevices) {
+            interceptGetUserMedia();
+          }
+        });
+      }
+    }
+  });
+
+  function interceptSpeechRecognition() {
+    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+      return;
+    }
+
+    const OriginalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const SpeechRecognitionWrapper = function(...args) {
+      const recognizer = new OriginalSpeechRecognition(...args);
+      const originalStart = recognizer.start.bind(recognizer);
+
+      recognizer.start = function() {
+        requestMediaPermissions({ audio: true }).then(granted => {
+          if (granted) {
+            originalStart();
+          } else {
+            const errorEvent = new SpeechRecognitionErrorEvent('error');
+            errorEvent.error = 'not-allowed'; // This is the standard error for permission denial.
+            recognizer.dispatchEvent(errorEvent);
+          }
+        });
+      };
+
+      return recognizer;
+    };
+
+    SpeechRecognitionWrapper.prototype = OriginalSpeechRecognition.prototype;
+    SpeechRecognitionWrapper.prototype.constructor = SpeechRecognitionWrapper;
+
+    if (window.SpeechRecognition) {
+      window.SpeechRecognition = SpeechRecognitionWrapper;
+    }
+    if (window.webkitSpeechRecognition) {
+      window.webkitSpeechRecognition = SpeechRecognitionWrapper;
+    }
+  }
+
+  interceptSpeechRecognition();
+
+  window.addEventListener('message', function(event) {
+    if (event.data) {
+      if (event.data.type === 'resolveMediaPermission') {
+        const { promiseId, granted } = event.data;
+        if (pendingMediaResolvers[promiseId]) {
+          pendingMediaResolvers[promiseId](granted);
+        }
+      }
+    }
+  });
+
+})();</script><script>((function(modelInformation) {
+  const originalFetch = window.fetch;
+  // TODO: b/421908508 - Move these out of the script and match all generative AI model calls.
+  let googleLlmBaseApiUrls = [
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.textModelName + ':streamGenerateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.textModelName + ':generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageModelName + ':predict',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageModelName + ':predictLongRunning',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageEditModelName + ':generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.videoModelName + ':predict',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.videoModelName + ':predictLongRunning',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.ttsModelName + ':generateContent',
+  ];
+  modelInformation.deprecatedTextModelNames.forEach((modelName) => {
+    googleLlmBaseApiUrls.push(
+      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':streamGenerateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent',
+    );
+  });
+
+  const pendingFetchResolvers = {};
+  let nextPromiseId = 0;
+
+  function handleStringInput(input, optionsArgument) {
+    const actualUrl = input;
+    const fetchCallArgs = [actualUrl, optionsArgument];
+    const effectiveOptions = optionsArgument || {};
+    const bodyForApiKeyCheck = effectiveOptions.body;
+    const bodyForPostMessage = effectiveOptions.body;
+    return { actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage };
+  }
+
+  function handleRequestInput(input, optionsArgument) {
+    const actualUrl = input.url;
+    const fetchCallArgs = [input, optionsArgument];
+    const effectiveOptions = { method: input.method, headers: new Headers(input.headers) };
+    let bodyForApiKeyCheck;
+    let bodyForPostMessage;
+
+    if (optionsArgument) {
+      if (optionsArgument.method) effectiveOptions.method = optionsArgument.method;
+      if (optionsArgument.headers) effectiveOptions.headers = new Headers(optionsArgument.headers);
+      if ('body' in optionsArgument) {
+        bodyForApiKeyCheck = optionsArgument.body;
+        bodyForPostMessage = optionsArgument.body;
+      } else {
+        bodyForApiKeyCheck = undefined;
+        bodyForPostMessage = input.body;
+      }
+    } else {
+      bodyForApiKeyCheck = undefined;
+      bodyForPostMessage = input.body;
+    }
+    return { actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage };
+  }
+
+  window.fetch = function(input, optionsArgument) {
+    let actualUrl;
+    let fetchCallArgs;
+    let effectiveOptions = {};
+    let bodyForApiKeyCheck;
+    let bodyForPostMessage;
+
+    if (typeof input === 'string') {
+      ({actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage} = handleStringInput(input, optionsArgument));
+    } else if (input instanceof Request) {
+      ({actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage} = handleRequestInput(input, optionsArgument));
+    } else {
+      return originalFetch.apply(window, [input, optionsArgument]);
+    }
+
+    effectiveOptions.method = effectiveOptions.method || 'GET';
+    if (!effectiveOptions.headers) {
+      effectiveOptions.headers = new Headers();
+    }
+
+
+    if (typeof actualUrl === 'string' && googleLlmBaseApiUrls.some((url) => actualUrl.startsWith(url))) {
+      let apiKeyIsNull = true;
+
+      const regex = new RegExp("models/([^:]+)");
+      const modelNameMatch = actualUrl.match(regex);
+      const modelName = modelNameMatch ? modelNameMatch[1] : 'unspecified';
+
+
+      try {
+        const urlObject = new URL(actualUrl);  // Use URL object for robust parsing
+        const apiKeyParam = urlObject.searchParams.get('key');
+        if (apiKeyParam) {
+          apiKeyIsNull = false;
+        }
+      } catch (e) {
+        // Continue checks even if URL parsing fails
+      }
+
+      if (apiKeyIsNull && effectiveOptions.headers) {
+        const h = new Headers(effectiveOptions.headers);
+        const apiKeyHeaderValue = h.get('X-API-Key') || h.get('x-api-key');
+        if (apiKeyHeaderValue) {
+          apiKeyIsNull = false;
+          return originalFetch.apply(window, fetchCallArgs);
+        }
+      }
+
+      if (apiKeyIsNull && effectiveOptions.method && ['POST', 'PUT', 'PATCH'].includes(effectiveOptions.method.toUpperCase()) && typeof bodyForApiKeyCheck === 'string') {
+        try {
+          const bodyData = JSON.parse(bodyForApiKeyCheck);
+          if (bodyData && bodyData.apiKey) {
+            apiKeyIsNull = false;
+            return originalFetch.apply(window, fetchCallArgs);
+          }
+        } catch (e) {
+          // Ignore JSON parsing errors
+        }
+      }
+
+      if(apiKeyIsNull) {
+        const promiseId = nextPromiseId++;
+        const promise = new Promise((resolve) => {
+          pendingFetchResolvers[promiseId] = (resolvedResponse) => {
+            delete pendingFetchResolvers[promiseId];
+            resolve(resolvedResponse);
+          };
+        });
+
+        let serializedBodyForPostMessage;
+        if (typeof bodyForPostMessage === 'string' || bodyForPostMessage == null) {
+            serializedBodyForPostMessage = bodyForPostMessage;
+        } else if (bodyForPostMessage instanceof ReadableStream) {
+            serializedBodyForPostMessage = null;
+        } else {
+            try {
+                serializedBodyForPostMessage = JSON.stringify(bodyForPostMessage);
+            } catch (e) {
+                serializedBodyForPostMessage = null;
+            }
+        }
+
+        const messageOptions = {
+            method: effectiveOptions.method,
+            headers: Object.fromEntries(new Headers(effectiveOptions.headers).entries()),
+            body: serializedBodyForPostMessage
+        };
+
+        window.parent.postMessage({
+          type: 'requestFetch',
+          url: actualUrl,
+          modelName: modelName,
+          options: messageOptions,
+          promiseId: promiseId,
+        }, '*');
+
+        return promise;
+      }
+      return originalFetch.apply(window, fetchCallArgs);
+    }
+    return originalFetch.apply(window, fetchCallArgs);
+  };
+
+  window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'resolveFetch') {
+      const { promiseId, response } = event.data;
+      if (pendingFetchResolvers[promiseId]) {
+        try {
+          const reconstructedResponse = new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: new Headers(response.headers),
+          });
+          pendingFetchResolvers[promiseId](reconstructedResponse);
+        } catch (error) {
+          pendingFetchResolvers[promiseId](new Response(null, { status: 500, statusText: "Interceptor Response Reconstruction Error" }));
+        }
+      }
+    }
+  });
+
+}))({"textModelName":"gemini-2.5-flash-preview-05-20","imageModelName":"imagen-3.0-generate-002","imageEditModelName":"gemini-2.0-flash-preview-image-generation","videoModelName":"veo-2.0-generate-001","ttsModelName":"gemini-2.5-flash-preview-tts","deprecatedTextModelNames":["gemini-2.0-flash","gemini-2.5-flash-preview-04-17"]})</script><script>(function() {
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+
+    /**
+   * Normalizes an error event or a promise rejection reason into a structured error object.
+   * @param {*} errorEventOrReason The error object or reason.
+   * @return {object} Structured error data { message, name, stack }.
+   */
+  function getErrorObject(errorEventOrReason) {
+    if (errorEventOrReason instanceof Error) {
+      return {
+        message: errorEventOrReason.message,
+        name: errorEventOrReason.name,
+        stack: errorEventOrReason.stack,
+      };
+    }
+    // Fallback for non-Error objects.
+    try {
+      return {
+        message: JSON.stringify(errorEventOrReason),
+        name: 'UnknownErrorType',
+        stack: null,
+      };
+    } catch (e) {
+      return {
+        message: String(errorEventOrReason),
+        name: 'UnknownErrorTypeNonStringifiable',
+        stack: null,
+      };
+    }
+  }
+
+  /**
+   * Converts an array of arguments (from log/error) into a single string.
+   * Handles Error objects specially to include their message and stack.
+   * @param {Array<*>} args - Arguments passed to console methods.
+   * @return {string} A string representation of the arguments.
+   */
+  function stringifyArgs(args) {
+    return args
+      .map((arg) => {
+        if (arg instanceof Error) {
+          const {message, stack} = arg;
+          return `Error: ${message}${stack ? ('\nStack: ' + stack) : ''}`;
+        }
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg);
+          } catch (error) {
+            return '[Circular Object]';
+          }
+        } else {
+          return String(arg);
+        }
+      })
+      .join(' ');
+  }
+
+  console.log = function(...args) {
+    const logString = stringifyArgs(args);
+    window.parent.postMessage({ type: 'log', message: logString }, '*');
+    originalConsoleLog.apply(console, args);
+  };
+
+  console.error = function(...args) {
+    let errorData;
+    if (args.length > 0 && args[0] instanceof Error) {
+      const err = args[0];
+      // If the first arg is an Error, capture its details.
+      errorData = {
+        type: 'error',
+        source: 'CONSOLE_ERROR',
+        ...getErrorObject(err),
+        rawArgsString: stringifyArgs(args.slice(1)),
+        timestamp: new Date().toISOString(),
+      };
+    } else {
+      // If not an Error object, treat all args as a general error message.
+      errorData = {
+        type: 'error',
+        source: 'CONSOLE_ERROR',
+        message: stringifyArgs(args),
+        name: 'ConsoleLoggedError',
+        stack: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+    window.parent.postMessage(errorData, '*');
+    originalConsoleError.apply(console, args);
+  };
+
+  // Listen for global unhandled synchronous errors.
+  window.addEventListener('error', function(event) {
+    const errorDetails = event.error ? getErrorObject(event.error) : {
+      message: event.message,
+      name: 'GlobalError',
+      stack: null,
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+    };
+
+    window.parent.postMessage({
+      type: 'error',
+      source: 'global',
+      ...errorDetails,
+      message: errorDetails.message || event.message,
+      timestamp: new Date().toISOString(),
+    }, '*');
+  });
+
+  // Listen for unhandled promise rejections (asynchronous errors).
+  window.addEventListener('unhandledrejection', function(event) {
+    const errorDetails = getErrorObject(event.reason);
+
+    window.parent.postMessage({
+      type: 'error',
+      source: 'unhandledrejection',
+      ...errorDetails,
+      message: errorDetails.message || 'Unhandled Promise Rejection',
+      timestamp: new Date().toISOString(),
+    }, '*');
+  });
+
+})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Calculator Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        /* Styles for main category tabs */
+        .main-tab-button {
+            padding: 12px 20px;
+            font-weight: 700;
+            border-bottom: 4px solid transparent;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            color: #4b5563; /* Gray-700 */
+            font-size: 1.1rem;
+            flex-grow: 1; /* Allow buttons to grow and fill space */
+            text-align: center;
+            white-space: nowrap; /* Prevent wrapping */
+        }
+        .main-tab-button.active {
+            border-color: #3b82f6; /* Blue-500 */
+            color: #1f2937; /* Gray-900 */
+            background-color: #e5e7eb; /* Gray-200 */
+        }
+        .main-tab-button:hover:not(.active) {
+            background-color: #e5e7eb; /* Gray-100 */
+        }
+        /* Styles for sub-category tabs */
+        .sub-tab-button {
+            padding: 8px 12px;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            color: #6b7280; /* Gray-500 */
+            font-size: 0.9rem;
+        }
+        .sub-tab-button.active {
+            border-color: #2563eb; /* Blue-600 (darker for sub-tab) */
+            color: #1f2937; /* Gray-900 */
+            background-color: #eff6ff; /* Blue-50 */
+        }
+        .sub-tab-button:hover:not(.active) {
+            background-color: #f3f4f6; /* Gray-50 */
+        }
+
+        /* Custom styles for cost breakdown circles */
+        .cost-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 10px;
+            padding: 5px; /* Added padding to ensure text fits */
+            font-size: 0.75rem; /* Adjusted font size for better fit */
+        }
+        .cost-circle .amount {
+            font-size: 0.95rem; /* Larger font for amount */
+            font-weight: 700;
+        }
+        .cost-circle .percentage {
+            font-size: 0.7rem; /* Smaller font for percentage */
+            font-weight: 500;
+            opacity: 0.9;
+        }
+        .cost-circle-principal { background-color: #3b82f6; } /* Blue */
+        .cost-circle-interest { background-color: #ef4444; } /* Red */
+        .cost-circle-processing { background-color: #f59e0b; } /* Amber */
+        .cost-circle-other-charges { background-color: #84cc16; } /* Lime-500 */
+        .cost-circle-gst-interest { background-color: #6d28d9; } /* Violet */
+        .cost-circle-maturity { background-color: #10b981; } /* Green-500 */
+        .cost-circle-total-deposit { background-color: #0d9488; } /* Teal-600 */
+        .cost-circle-interest-earned { background-color: #f97316; } /* Orange-500 */
+        .cost-circle-subsidized { background-color: #8b5cf6; } /* Violet-500 */
+        .cost-circle-card-discount { background-color: #d946ef; } /* Fuchsia-500 */
+        .cost-circle-total-withdrawal { background-color: #dc2626; } /* Red-600 */
+        .cost-circle-remaining-balance { background-color: #16a34a; } /* Green-600 */
+
+
+        /* Telegram Link Styles and Animation */
+        .telegram-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 10px 24px;
+            background-color: #0088cc; /* Telegram brand color */
+            border-radius: 9999px;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            width: 90%; /* Increased width */
+            max-width: 600px; /* Max width for larger screens */
+            margin-left: auto;
+            margin-right: auto;
+            animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+
+        .telegram-link:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+            animation: none;
+        }
+
+        .telegram-link::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+            opacity: 0;
+            z-index: 0;
+        }
+
+        .telegram-link:hover::before {
+            width: 120%;
+            height: 120%;
+            opacity: 1;
+        }
+
+        .telegram-link span, .telegram-link svg {
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.01);
+                box-shadow: 0 0 15px rgba(0, 136, 204, 0.4);
+            }
+        }
+
+        /* Dynamic Text Color - using CSS variables for transition */
+        .telegram-link-text {
+            transition: color 0.5s ease-in-out; /* Smooth color transition */
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            transform: translateY(-50px); /* Initial position for animation */
+            opacity: 0; /* Initial opacity for animation */
+            animation: modalAppear 0.3s ease-out forwards;
+        }
+
+        .modal.hidden .modal-content {
+            animation: modalDisappear 0.3s ease-in forwards;
+        }
+
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes modalAppear {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes modalDisappear {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        /* Styles for table headings matching colors */
+        .table-header-principal { color: #3b82f6; }
+        .table-header-interest { color: #ef4444; }
+        .table-header-gst-interest { color: #6d28d9; }
+        .table-header-total-emi { color: #1e40af; }
+        .table-header-deposit { color: #0d9488; }
+        .table-header-balance { color: #10b981; }
+        .table-header-withdrawal { color: #dc2626; } /* Red-600 */
+
+
+        /* Style for remaining balance in EMI schedule */
+        .text-red-bold {
+            color: #ef4444; /* red-600 */
+            font-weight: bold;
+        }
+
+        .calculator-section-group {
+            border: 1px solid #e0e0e0;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            background-color: #fdfdfd;
+        }
+        
+        /* Styles for the hidden downloadable content */
+        #downloadable-content-wrapper {
+            position: absolute;
+            left: -9999px; /* Move it off-screen */
+            top: auto;
+            width: 800px; /* A fixed width for consistent PDF/JPG output */
+            background: white;
+            padding: 20px;
+        }
+
+
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.16 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.absolute{position:absolute}.relative{position:relative}.right-0{right:0px}.z-10{z-index:10}.col-span-1{grid-column:span 1 / span 1}.-mr-1{margin-right:-0.25rem}.mb-2{margin-bottom:0.5rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.ml-2{margin-left:0.5rem}.mt-1{margin-top:0.25rem}.mt-2{margin-top:0.5rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mt-8{margin-top:2rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.hidden{display:none}.h-5{height:1.25rem}.min-h-screen{min-height:100vh}.w-5{width:1.25rem}.w-full{width:100%}.min-w-full{min-width:100%}.max-w-2xl{max-width:42rem}.flex-grow{flex-grow:1}.origin-top-right{transform-origin:top right}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.gap-1{gap:0.25rem}.gap-2{gap:0.5rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.gap-x-8{column-gap:2rem}.gap-y-4{row-gap:1rem}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.divide-y > :not([hidden]) ~ :not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px * calc(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px * var(--tw-divide-y-reverse))}.divide-gray-200 > :not([hidden]) ~ :not([hidden]){--tw-divide-opacity:1;border-color:rgb(229 231 235 / var(--tw-divide-opacity, 1))}.overflow-x-auto{overflow-x:auto}.whitespace-nowrap{white-space:nowrap}.rounded-2xl{border-radius:1rem}.rounded-lg{border-radius:0.5rem}.rounded-md{border-radius:0.375rem}.rounded-l-lg{border-top-left-radius:0.5rem;border-bottom-left-radius:0.5rem}.rounded-r-lg{border-top-right-radius:0.5rem;border-bottom-right-radius:0.5rem}.rounded-tr-lg{border-top-right-radius:0.5rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-r{border-right-width:1px}.border-t{border-top-width:1px}.border-blue-200{--tw-border-opacity:1;border-color:rgb(191 219 254 / var(--tw-border-opacity, 1))}.border-gray-200{--tw-border-opacity:1;border-color:rgb(229 231 235 / var(--tw-border-opacity, 1))}.border-gray-300{--tw-border-opacity:1;border-color:rgb(209 213 219 / var(--tw-border-opacity, 1))}.border-green-200{--tw-border-opacity:1;border-color:rgb(187 247 208 / var(--tw-border-opacity, 1))}.border-purple-200{--tw-border-opacity:1;border-color:rgb(233 213 255 / var(--tw-border-opacity, 1))}.bg-blue-50{--tw-bg-opacity:1;background-color:rgb(239 246 255 / var(--tw-bg-opacity, 1))}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-gray-100{--tw-bg-opacity:1;background-color:rgb(243 244 246 / var(--tw-bg-opacity, 1))}.bg-gray-50{--tw-bg-opacity:1;background-color:rgb(249 250 251 / var(--tw-bg-opacity, 1))}.bg-green-50{--tw-bg-opacity:1;background-color:rgb(240 253 244 / var(--tw-bg-opacity, 1))}.bg-purple-50{--tw-bg-opacity:1;background-color:rgb(250 245 255 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.p-4{padding:1rem}.p-3{padding:0.75rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.pb-2{padding-bottom:0.5rem}.pb-6{padding-bottom:1.5rem}.text-left{text-align:left}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.leading-relaxed{line-height:1.625}.tracking-wider{letter-spacing:0.05em}.text-amber-600{--tw-text-opacity:1;color:rgb(217 119 6 / var(--tw-text-opacity, 1))}.text-blue-700{--tw-text-opacity:1;color:rgb(29 78 216 / var(--tw-text-opacity, 1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99 / var(--tw-text-opacity, 1))}.text-gray-700{--tw-text-opacity:1;color:rgb(55 65 81 / var(--tw-text-opacity, 1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}.text-green-700{--tw-text-opacity:1;color:rgb(21 128 61 / var(--tw-text-opacity, 1))}.text-orange-600{--tw-text-opacity:1;color:rgb(234 88 12 / var(--tw-text-opacity, 1))}.text-orange-700{--tw-text-opacity:1;color:rgb(194 65 12 / var(--tw-text-opacity, 1))}.text-purple-700{--tw-text-opacity:1;color:rgb(126 34 206 / var(--tw-text-opacity, 1))}.text-red-500{--tw-text-opacity:1;color:rgb(239 68 68 / var(--tw-text-opacity, 1))}.text-red-600{--tw-text-opacity:1;color:rgb(220 38 38 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-gray-900{--tw-text-opacity:1;color:rgb(17 24 39 / var(--tw-text-opacity, 1))}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.ring-1{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.ring-black{--tw-ring-opacity:1;--tw-ring-color:rgb(0 0 0 / var(--tw-ring-opacity, 1))}.ring-opacity-5{--tw-ring-opacity:0.05}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-300{transition-duration:300ms}.ease-in-out{transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1)}.hover\:scale-105:hover{--tw-scale-x:1.05;--tw-scale-y:1.05;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216 / var(--tw-bg-opacity, 1))}.hover\:bg-gray-100:hover{--tw-bg-opacity:1;background-color:rgb(243 244 246 / var(--tw-bg-opacity, 1))}.hover\:bg-gray-50:hover{--tw-bg-opacity:1;background-color:rgb(249 250 251 / var(--tw-bg-opacity, 1))}.focus\:border-blue-500:focus{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:ring-2:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-blue-500:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(59 130 246 / var(--tw-ring-opacity, 1))}.focus\:ring-indigo-500:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(99 102 241 / var(--tw-ring-opacity, 1))}.focus\:ring-offset-2:focus{--tw-ring-offset-width:2px}.focus\:ring-offset-gray-100:focus{--tw-ring-offset-color:#f3f4f6}@media (min-width: 640px){.sm\:col-span-2{grid-column:span 2 / span 2}.sm\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.sm\:gap-2{gap:0.5rem}.sm\:gap-4{gap:1rem}.sm\:p-6{padding:1.5rem}.sm\:p-8{padding:2rem}}@media (min-width: 768px){.md\:col-span-2{grid-column:span 2 / span 2}.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.md\:p-8{padding:2rem}.md\:p-10{padding:2.5rem}}@media (min-width: 1024px){.lg\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}}</style></head>
+<body class="p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center min-h-screen">
+
+    <a href="https://t.me/Earncashback_com" target="_blank" rel="noopener noreferrer" class="telegram-link mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+        <span class="font-extrabold telegram-link-text" style="color: rgb(0, 255, 255);">Join Now for Latest Offers &amp; Earnings 💵</span>
+    </a>
+
+    <div id="calculator-main-card" class="bg-white p-6 sm:p-8 md:p-10 rounded-2xl shadow-xl w-full max-w-2xl border border-gray-200">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Financial Calculator Suite</h1>
+
+        <!-- Main Category Tabs -->
+        <div class="flex flex-wrap justify-center gap-1 sm:gap-2 mb-4 border-b" id="mainCategoryTabs">
+            <button class="main-tab-button active" data-main-type="loan">Loan Calculator</button>
+            <button class="main-tab-button" data-main-type="investment">Investment Calculator</button>
+        </div>
+
+        <!-- Sub Category Tabs Container -->
+        <div id="subCategoryTabsContainer">
+            <!-- Loan Sub-tabs -->
+            <div id="loanSubCategoryTabs" class="flex flex-wrap justify-center gap-2 sm:gap-4 mb-8">
+                <button class="sub-tab-button active" data-loan-type="reducing_interest">Reducing Balance EMI</button>
+                <button class="sub-tab-button" data-loan-type="no_cost_emi">No-Cost EMI</button>
+                <button class="sub-tab-button" data-loan-type="flat_interest">Flat Interest Rate</button>
+            </div>
+            <!-- Investment Sub-tabs -->
+            <div id="investmentSubCategoryTabs" class="hidden flex flex-wrap justify-center gap-2 sm:gap-4 mb-8">
+                <button class="sub-tab-button active" data-investment-type="fd">FD Calculator</button>
+                <button class="sub-tab-button" data-investment-type="rd">RD Calculator</button>
+                <button class="sub-tab-button" data-investment-type="swp">SWP Calculator</button>
+            </div>
+        </div>
+
+        <!-- Calculator Forms Container -->
+        <div id="calculatorSectionsContainer">
+            <!-- Loan Calculator Section (Wrapper for all loan types) -->
+            <div id="loanCalculatorSection" class="calculator-section-group">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="loanAmount" id="loanAmountLabel" class="block text-gray-700 text-sm font-medium mb-2">Loan Amount (₹)</label>
+                        <input type="number" id="loanAmount" value="20000" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="loanAmountError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid amount.</p>
+                    </div>
+                    <div id="cardDiscountDiv" class="hidden">
+                        <label for="cardDiscount" class="block text-gray-700 text-sm font-medium mb-2">Card Discount (₹)</label>
+                        <input type="number" id="cardDiscount" value="0" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="cardDiscountError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid discount.</p>
+                    </div>
+                    <div id="annualInterestRateDiv">
+                        <label for="annualInterestRate" class="block text-gray-700 text-sm font-medium mb-2">Annual Interest Rate (%)</label>
+                        <input type="number" id="annualInterestRate" value="18" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="annualInterestRateError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid interest rate.</p>
+                    </div>
+                    <div>
+                        <label for="tenure" class="block text-gray-700 text-sm font-medium mb-2">Tenure (Months)</label>
+                        <select id="tenure" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                            <option value="3">3 Months</option>
+                            <option value="6" selected="">6 Months</option>
+                            <option value="9">9 Months</option>
+                            <option value="12">12 Months</option>
+                            <option value="18">18 Months</option>
+                            <option value="24">24 Months</option>
+                            <option value="36">36 Months</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        <p id="tenureError" class="text-red-500 text-xs mt-1 hidden">Please select a tenure.</p>
+                    </div>
+                    <div>
+                        <label for="startDate" class="block text-gray-700 text-sm font-medium mb-2">Starting Date (Optional)</label>
+                        <input type="date" id="startDate" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                        <p id="startDateError" class="text-red-500 text-xs mt-1 hidden">Please select a starting date.</p>
+                    </div>
+                    <div id="customTenureInputDiv" class="mt-4 hidden">
+                        <label for="customTenure" class="block text-gray-700 text-sm font-medium mb-2">Custom Tenure (Months)</label>
+                        <input type="number" id="customTenure" value="1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" min="1">
+                        <p id="customTenureError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid tenure (minimum 1 month).</p>
+                    </div>
+                    <div id="otherChargesDiv" class="hidden">
+                        <label for="otherCharges" class="block text-gray-700 text-sm font-medium mb-2">Other Charges (e.g., Platform Fee)</label>
+                        <input type="number" id="otherCharges" value="0" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="otherChargesError" class="text-red-500 text-xs mt-1 hidden">Please enter valid other charges.</p>
+                    </div>
+                </div>
+
+                <div id="processingFeeSection" class="mb-6 border border-gray-200 p-4 rounded-lg bg-gray-50">
+                    <label for="processingFeeType" class="block text-gray-700 text-sm font-medium mb-2">Select Processing Fee</label>
+                    <select id="processingFeeType" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                        <option value="standard-16percent">1% Processing + 18% GST</option>
+                        <option value="standard-18flat" selected="">₹199 Flat + 18% GST</option>
+                        <option value="custom-percentage">Custom Percentage Fee (%) + 18% GST</option>
+                        <option value="custom-flat">Custom Flat Fee (₹) + 18% GST</option>
+                    </select>
+                    <p id="processingFeeTypeError" class="text-red-500 text-xs mt-1 hidden">Please select a processing fee type.</p>
+
+                    <div id="customPercentageInputDiv" class="mt-4 hidden">
+                        <label for="customPercentageFee" class="block text-gray-700 text-sm font-medium mb-2">Percentage Fee (e.g., 0.5 for 0.5%)</label>
+                        <input type="number" id="customPercentageFee" value="0" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="customPercentageFeeError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid percentage fee.</p>
+                    </div>
+
+                    <div id="customFlatInputDiv" class="mt-4 hidden">
+                        <label for="customFlatFee" class="block text-gray-700 text-sm font-medium mb-2">Flat Fee (₹)</label>
+                        <input type="number" id="customFlatFee" value="199" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="customFlatFeeError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid flat fee.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FD Calculator Section -->
+            <div id="fdCalculatorSection" class="calculator-section-group hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="fdPrincipal" class="block text-gray-700 text-sm font-medium mb-2">Deposit Amount (₹)</label>
+                        <input type="number" id="fdPrincipal" value="100000" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="fdPrincipalError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid deposit amount.</p>
+                    </div>
+                    <div>
+                        <label for="fdAnnualInterestRate" class="block text-gray-700 text-sm font-medium mb-2">Annual Interest Rate (%)</label>
+                        <input type="number" id="fdAnnualInterestRate" value="7" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="fdAnnualInterestRateError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid interest rate.</p>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <div class="flex-grow">
+                            <label for="fdTenureValue" class="block text-gray-700 text-sm font-medium mb-2">Tenure</label>
+                            <input type="number" id="fdTenureValue" value="1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" min="0" step="0.5">
+                            <p id="fdTenureValueError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid tenure.</p>
+                        </div>
+                        <div class="pb-2">
+                            <select id="fdTenureUnit" class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                                <option value="years" selected="">Years</option>
+                                <option value="months">Months</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="hidden"> <label for="fdCompoundingFrequency" class="block text-gray-700 text-sm font-medium mb-2">Compounding Frequency</label>
+                        <select id="fdCompoundingFrequency" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                            <option value="4">Quarterly</option>
+                        </select>
+                    </div>
+                     <div class="md:col-span-2">
+                        <label for="fdStartDate" class="block text-gray-700 text-sm font-medium mb-2">Starting Date (Optional)</label>
+                        <input type="date" id="fdStartDate" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                    </div>
+                </div>
+            </div> 
+            
+            <!-- RD Calculator Section -->
+            <div id="rdCalculatorSection" class="calculator-section-group hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="rdMonthlyDeposit" class="block text-gray-700 text-sm font-medium mb-2">Monthly Deposit (₹)</label>
+                        <input type="number" id="rdMonthlyDeposit" value="1000" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="rdMonthlyDepositError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid monthly deposit.</p>
+                    </div>
+                    <div>
+                        <label for="rdAnnualInterestRate" class="block text-gray-700 text-sm font-medium mb-2">Annual Interest Rate (%)</label>
+                        <input type="number" id="rdAnnualInterestRate" value="6.5" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="rdAnnualInterestRateError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid interest rate.</p>
+                    </div>
+                    <div>
+                        <label for="rdTenureMonths" class="block text-gray-700 text-sm font-medium mb-2">Tenure (Months)</label>
+                        <input type="number" id="rdTenureMonths" value="12" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" min="1" step="1">
+                        <p id="rdTenureMonthsError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid number of months.</p>
+                    </div>
+                     <div>
+                        <label for="rdStartDate" class="block text-gray-700 text-sm font-medium mb-2">Starting Date (Optional)</label>
+                        <input type="date" id="rdStartDate" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                    </div>
+                </div>
+            </div> 
+            
+            <!-- SWP Calculator Section -->
+            <div id="swpCalculatorSection" class="calculator-section-group hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="swpInvestmentAmount" class="block text-gray-700 text-sm font-medium mb-2">Total Investment Amount (₹)</label>
+                        <input type="number" id="swpInvestmentAmount" value="500000" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="swpInvestmentAmountError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid investment amount.</p>
+                    </div>
+                    <div>
+                        <label for="swpMonthlyWithdrawalValue" class="block text-gray-700 text-sm font-medium mb-2">Monthly Withdrawal</label>
+                        <div class="flex items-center">
+                            <input type="number" id="swpMonthlyWithdrawalValue" value="6" class="w-full p-3 border border-gray-300 rounded-l-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                            <select id="swpMonthlyWithdrawalUnit" class="p-3 border-t border-b border-r border-gray-300 rounded-r-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                                <option value="percent" selected="">%</option>
+                                <option value="amount">₹</option>
+                            </select>
+                        </div>
+                        <p id="swpMonthlyWithdrawalError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid withdrawal value.</p>
+                    </div>
+                    <div>
+                        <label for="swpAnnualReturnRate" class="block text-gray-700 text-sm font-medium mb-2">Expected Annual Return Rate (%)</label>
+                        <input type="number" id="swpAnnualReturnRate" value="8" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" step="0.01">
+                        <p id="swpAnnualReturnRateError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid return rate.</p>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <div class="flex-grow">
+                            <label for="swpTenureValue" class="block text-gray-700 text-sm font-medium mb-2">Tenure</label>
+                            <input type="number" id="swpTenureValue" value="1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" min="1" step="1">
+                            <p id="swpTenureValueError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid tenure.</p>
+                        </div>
+                        <div class="pb-2">
+                            <select id="swpTenureUnit" class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                                <option value="years" selected="">Years</option>
+                                <option value="months">Months</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="swpStartDate" class="block text-gray-700 text-sm font-medium mb-2">Starting Date (Optional)</label>
+                        <input type="date" id="swpStartDate" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                    </div>
+                </div>
+            </div>
+        </div> 
+
+        <button id="calculateButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 mb-4">
+            Calculate
+        </button>
+
+        <div class="relative inline-block text-left w-full mb-6">
+            <div>
+                <button type="button" id="actionsMenuButton" class="inline-flex justify-center w-full rounded-lg border border-gray-300 shadow-sm px-4 py-3 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500" aria-expanded="true" aria-haspopup="true">
+                    Actions &amp; Downloads
+                    <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="actionsMenu" class="origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10 hidden" role="menu" aria-orientation="vertical" aria-labelledby="actionsMenuButton">
+                <div class="py-1" role="none">
+                    <a href="#" id="copySummaryTextButton" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">Copy Summary Text</a>
+                    <a href="#" id="downloadJpgButton" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">Download as JPG</a>
+                    <a href="#" id="downloadPdfButton" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">Download as PDF</a>
+                    <a href="#" id="downloadSheetButton" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">Download Schedule (CSV)</a>
+                    <a href="#" id="downloadCodeButton" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">Download Code (HTML)</a>
+                    <a href="#" id="downloadJsButton" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">Download JS Code</a>
+                </div>
+            </div>
+        </div>
+
+        <a href="https://t.me/Earncashback_com" target="_blank" rel="noopener noreferrer" class="telegram-link mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            <span class="font-extrabold telegram-link-text" style="color: rgb(0, 255, 255);">Join Now for Latest Offers &amp; Earnings 💵</span>
+        </a>
+
+        <div id="resultsContainer">
+            <div id="results" class="space-y-4 text-gray-800">
+                <h2 class="text-2xl font-semibold text-center mb-4" id="resultsSummaryTitle">Calculation Summary</h2>
+                <p class="text-red-600 text-center font-semibold text-lg mt-6 mb-4" id="processingFeeMessage">(PROCESSING FEES AND GST PAYABLE WITH FIRST EMI)</p>
+
+                <div id="noCostEmiDetailsContainer" class="hidden md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-purple-50 p-4 rounded-lg shadow-sm border border-purple-200">
+                        <p class="text-sm text-gray-600">Card Discount:</p>
+                        <p id="cardDiscountOutput" class="text-xl font-bold text-purple-700">₹0.00</p>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg shadow-sm border border-blue-200">
+                        <p class="text-sm text-gray-600">Upfront Discount (Bank):</p>
+                        <p id="upfrontDiscountOutput" class="text-xl font-bold text-blue-700">₹0.00</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg shadow-sm border border-green-200">
+                        <p class="text-sm text-gray-600">Effective Loan Amount:</p>
+                        <p id="effectiveLoanAmountOutput" class="text-xl font-bold text-green-700">₹0.00</p>
+                    </div>
+                </div>
+
+                <div id="loanSummaryResults" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600" id="loanSummaryEmiLabel">Per Month EMI (P+I+GST on Interest):</p>
+                        <p id="emiOutput" class="text-xl font-bold text-blue-700">₹3,564.50<br><span class="text-base text-gray-500">(17.82% of amount)</span></p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600" id="loanSummaryTotalPaymentLabel">Total Payment:</p>
+                        <p id="totalPaymentOutput" class="text-xl font-bold text-gray-700">₹21,489.19</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600" id="loanSummaryTotalPaymentExclPFLabel">Total Payment Excluding PF:</p>
+                        <p id="totalPaymentExcludingPFOutput" class="text-xl font-bold text-green-700">₹21,254.37</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600" id="loanSummaryTotalInterestLabel">Total Interest (incl. GST)</p>
+                        <p id="totalInterestOutput" class="text-xl font-bold text-red-600">₹1,254.37<br><span class="text-base text-gray-500" id="totalInterestPercent">(6.27% of amount)</span></p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600" id="loanSummaryProcessingFeeLabel">Total Processing Fee (incl. GST):</p>
+                        <p id="processingFeeOutput" class="text-xl font-bold text-amber-600">₹234.82<br><span class="text-base text-gray-500">(1.17% of amount)</span></p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm col-span-1">
+                        <p class="text-sm text-gray-600" id="loanSummaryExtraPaymentLabel">Total Extra Payment</p>
+                        <p id="extraPaymentCombinedOutput" class="text-xl font-bold text-orange-700">₹1,489.19<br><span class="text-base text-orange-700">(7.45% of amount)</span></p>
+                    </div>
+                </div> <div id="fdRdSummaryResults" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Total Deposit Amount:</p>
+                        <p id="fdRdTotalDepositOutput" class="text-xl font-bold text-gray-700">₹0.00</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Interest Earned:</p>
+                        <p id="fdRdInterestEarnedOutput" class="text-xl font-bold text-orange-600">₹0.00</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm col-span-1 sm:col-span-2">
+                        <p class="text-sm text-gray-600">Maturity Amount:</p>
+                        <p id="fdRdMaturityOutput" class="text-xl font-bold text-green-700">₹0.00</p>
+                    </div>
+                </div>
+                
+                <!-- SWP Summary Results -->
+                <div id="swpSummaryResults" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Total Investment:</p>
+                        <p id="swpTotalInvestmentOutput" class="text-xl font-bold text-gray-700">₹0.00</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Total Withdrawal:</p>
+                        <p id="swpTotalWithdrawalOutput" class="text-xl font-bold text-red-600">₹0.00</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Total Interest Earned:</p>
+                        <p id="swpTotalInterestEarnedOutput" class="text-xl font-bold text-orange-600">₹0.00</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Remaining Balance:</p>
+                        <p id="swpRemainingBalanceOutput" class="text-xl font-bold text-green-700">₹0.00</p>
+                    </div>
+                </div>
+
+
+                <h2 class="text-2xl font-semibold text-center mt-8 mb-4" id="emiScheduleHeading">EMI Schedule</h2>
+                <div id="emiScheduleContainer" class="overflow-x-auto rounded-lg shadow-md border border-gray-200">
+                    <table id="emiScheduleTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100" id="emiScheduleThead"><tr>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                    
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-principal">Principal</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-interest">Interest</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-gst-interest">GST on Interest</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-total-emi">Total EMI Due</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">Balance</th>
+                </tr></thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="emiScheduleBody"><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">1</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,210.50</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹300.00</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹54.00</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,564.50</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹16,789.50</td>
+                    </tr><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">2</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,258.66</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹251.84</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹45.33</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,555.84</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹13,530.83</td>
+                    </tr><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">3</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,307.54</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹202.96</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹36.53</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,547.04</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹10,223.29</td>
+                    </tr><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">4</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,357.15</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹153.35</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹27.60</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,538.11</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹6,866.14</td>
+                    </tr><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">5</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,407.51</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹102.99</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹18.54</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,529.04</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹3,458.62</td>
+                    </tr><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">6</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,458.62</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹51.88</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹9.34</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,519.84</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹0.00</td>
+                    </tr></tbody>
+                    </table>
+                </div>
+
+                 <h2 class="text-2xl font-semibold text-center mt-8 mb-4 hidden" id="investmentScheduleHeading">Investment Growth Schedule</h2>
+                <div id="investmentScheduleContainer" class="overflow-x-auto rounded-lg shadow-md border border-gray-200 hidden">
+                    <table id="investmentScheduleTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100" id="investmentScheduleThead"></thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="investmentScheduleBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- SWP Schedule -->
+                <h2 class="text-2xl font-semibold text-center mt-8 mb-4 hidden" id="swpScheduleHeading">SWP Schedule</h2>
+                <div id="swpScheduleContainer" class="overflow-x-auto rounded-lg shadow-md border border-gray-200 hidden">
+                    <table id="swpScheduleTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100" id="swpScheduleThead"></thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="swpScheduleBody"></tbody>
+                    </table>
+                </div>
+
+
+                <h2 class="text-2xl font-semibold text-center mt-8 mb-4" id="costBreakdownHeading">Cost Breakdown</h2>
+                <div id="costBreakdown" class="flex flex-wrap justify-center items-center gap-4 mb-8"><div class="cost-circle cost-circle-principal">
+                    <span class="amount">₹20,000.00</span>
+                    <span class="percentage">(100.00%)</span>
+                    <span class="text-xs mt-1 block">Principal</span>
+                </div><div class="cost-circle cost-circle-interest">
+                    <span class="amount">₹1,063.03</span>
+                    <span class="percentage">(5.32%)</span>
+                    <span class="text-xs mt-1 block">Interest Paid</span>
+                </div><div class="cost-circle cost-circle-gst-interest">
+                    <span class="amount">₹191.34</span>
+                    <span class="percentage">(0.96%)</span>
+                    <span class="text-xs mt-1 block">GST on Interest</span>
+                </div><div class="cost-circle cost-circle-processing">
+                    <span class="amount">₹234.82</span>
+                    <span class="percentage">(1.17%)</span>
+                    <span class="text-xs mt-1 block">Processing Fee</span>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <a href="https://t.me/Earncashback_com" target="_blank" rel="noopener noreferrer" class="telegram-link mt-6">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+        <span class="font-extrabold telegram-link-text" style="color: rgb(0, 255, 255);">Join Now for Latest Offers &amp; Earnings 💵</span>
+    </a>
+
+    <div id="myModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalContent">
+        <div class="modal-content">
+            <button class="close-button" aria-label="Close dialog">×</button>
+            <h3 id="modalTitle" class="text-xl font-bold mb-4 text-gray-800">Download Complete!</h3>
+            <div id="modalContent" class="text-gray-700 leading-relaxed">
+                <div id="modalLoader" class="loader hidden"></div>
+                <p id="modalText">The JavaScript code has been downloaded.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hidden container for generating clean downloads -->
+    <div id="downloadable-content-wrapper">
+        <div id="downloadable-content" class="bg-white p-8 rounded-lg border border-gray-300 shadow-lg"><h1 class="text-3xl font-bold text-center text-gray-800 mb-2"></h1><p class="text-center text-gray-500 text-sm mb-6">Generated on: 25/7/2025, 7:41:50 pm</p><div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6 border-b pb-6"></div>
+            <div id="results" class="space-y-4 text-gray-800">
+                
+                
+
+                <div id="noCostEmiDetailsContainer" class="hidden md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-purple-50 p-4 rounded-lg shadow-sm border border-purple-200">
+                        <p class="text-sm text-gray-600">Card Discount:</p>
+                        <p id="cardDiscountOutput" class="text-xl font-bold text-purple-700">₹0.00</p>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg shadow-sm border border-blue-200">
+                        <p class="text-sm text-gray-600">Upfront Discount (Bank):</p>
+                        <p id="upfrontDiscountOutput" class="text-xl font-bold text-blue-700">₹0.00</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg shadow-sm border border-green-200">
+                        <p class="text-sm text-gray-600">Effective Loan Amount:</p>
+                        <p id="effectiveLoanAmountOutput" class="text-xl font-bold text-green-700">₹0.00</p>
+                    </div>
+                </div>
+
+                <div id="loanSummaryResults" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600" id="loanSummaryEmiLabel">Per Month EMI (P+I+GST on Interest):</p>
+                        <p id="emiOutput" class="text-xl font-bold text-blue-700">₹3,564.50<br><span class="text-base text-gray-500">(17.82% of amount)</span></p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600" id="loanSummaryTotalPaymentLabel">Total Payment:</p>
+                        <p id="totalPaymentOutput" class="text-xl font-bold text-gray-700">₹21,489.19</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600" id="loanSummaryTotalPaymentExclPFLabel">Total Payment Excluding PF:</p>
+                        <p id="totalPaymentExcludingPFOutput" class="text-xl font-bold text-green-700">₹21,254.37</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600" id="loanSummaryTotalInterestLabel">Total Interest (incl. GST)</p>
+                        <p id="totalInterestOutput" class="text-xl font-bold text-red-600">₹1,254.37<br><span class="text-base text-gray-500" id="totalInterestPercent">(6.27% of amount)</span></p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600" id="loanSummaryProcessingFeeLabel">Total Processing Fee (incl. GST):</p>
+                        <p id="processingFeeOutput" class="text-xl font-bold text-amber-600">₹234.82<br><span class="text-base text-gray-500">(1.17% of amount)</span></p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm col-span-1">
+                        <p class="text-sm text-gray-600" id="loanSummaryExtraPaymentLabel">Total Extra Payment</p>
+                        <p id="extraPaymentCombinedOutput" class="text-xl font-bold text-orange-700">₹1,489.19<br><span class="text-base text-orange-700">(7.45% of amount)</span></p>
+                    </div>
+                </div> <div id="fdRdSummaryResults" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Total Deposit Amount:</p>
+                        <p id="fdRdTotalDepositOutput" class="text-xl font-bold text-gray-700">₹0.00</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Interest Earned:</p>
+                        <p id="fdRdInterestEarnedOutput" class="text-xl font-bold text-orange-600">₹0.00</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm col-span-1 sm:col-span-2">
+                        <p class="text-sm text-gray-600">Maturity Amount:</p>
+                        <p id="fdRdMaturityOutput" class="text-xl font-bold text-green-700">₹0.00</p>
+                    </div>
+                </div>
+                
+                <!-- SWP Summary Results -->
+                <div id="swpSummaryResults" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Total Investment:</p>
+                        <p id="swpTotalInvestmentOutput" class="text-xl font-bold text-gray-700">₹0.00</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Total Withdrawal:</p>
+                        <p id="swpTotalWithdrawalOutput" class="text-xl font-bold text-red-600">₹0.00</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Total Interest Earned:</p>
+                        <p id="swpTotalInterestEarnedOutput" class="text-xl font-bold text-orange-600">₹0.00</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm text-gray-600">Remaining Balance:</p>
+                        <p id="swpRemainingBalanceOutput" class="text-xl font-bold text-green-700">₹0.00</p>
+                    </div>
+                </div>
+
+
+                <h2 class="text-2xl font-semibold text-center mt-8 mb-4" id="emiScheduleHeading">EMI Schedule</h2>
+                <div id="emiScheduleContainer" class="overflow-x-auto rounded-lg shadow-md border border-gray-200">
+                    <table id="emiScheduleTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100" id="emiScheduleThead"><tr>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                    
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-principal">Principal</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-interest">Interest</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-gst-interest">GST on Interest</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-total-emi">Total EMI Due</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">Balance</th>
+                </tr></thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="emiScheduleBody"><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">1</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,210.50</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹300.00</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹54.00</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,564.50</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹16,789.50</td>
+                    </tr><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">2</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,258.66</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹251.84</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹45.33</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,555.84</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹13,530.83</td>
+                    </tr><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">3</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,307.54</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹202.96</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹36.53</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,547.04</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹10,223.29</td>
+                    </tr><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">4</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,357.15</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹153.35</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹27.60</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,538.11</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹6,866.14</td>
+                    </tr><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">5</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,407.51</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹102.99</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹18.54</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,529.04</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹3,458.62</td>
+                    </tr><tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">6</td>
+                        
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,458.62</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹51.88</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹9.34</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">₹3,519.84</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">₹0.00</td>
+                    </tr></tbody>
+                    </table>
+                </div>
+
+                 <h2 class="text-2xl font-semibold text-center mt-8 mb-4 hidden" id="investmentScheduleHeading">Investment Growth Schedule</h2>
+                <div id="investmentScheduleContainer" class="overflow-x-auto rounded-lg shadow-md border border-gray-200 hidden">
+                    <table id="investmentScheduleTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100" id="investmentScheduleThead"></thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="investmentScheduleBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- SWP Schedule -->
+                <h2 class="text-2xl font-semibold text-center mt-8 mb-4 hidden" id="swpScheduleHeading">SWP Schedule</h2>
+                <div id="swpScheduleContainer" class="overflow-x-auto rounded-lg shadow-md border border-gray-200 hidden">
+                    <table id="swpScheduleTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100" id="swpScheduleThead"></thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="swpScheduleBody"></tbody>
+                    </table>
+                </div>
+
+
+                <h2 class="text-2xl font-semibold text-center mt-8 mb-4" id="costBreakdownHeading">Cost Breakdown</h2>
+                <div id="costBreakdown" class="flex flex-wrap justify-center items-center gap-4 mb-8"><div class="cost-circle cost-circle-principal">
+                    <span class="amount">₹20,000.00</span>
+                    <span class="percentage">(100.00%)</span>
+                    <span class="text-xs mt-1 block">Principal</span>
+                </div><div class="cost-circle cost-circle-interest">
+                    <span class="amount">₹1,063.03</span>
+                    <span class="percentage">(5.32%)</span>
+                    <span class="text-xs mt-1 block">Interest Paid</span>
+                </div><div class="cost-circle cost-circle-gst-interest">
+                    <span class="amount">₹191.34</span>
+                    <span class="percentage">(0.96%)</span>
+                    <span class="text-xs mt-1 block">GST on Interest</span>
+                </div><div class="cost-circle cost-circle-processing">
+                    <span class="amount">₹234.82</span>
+                    <span class="percentage">(1.17%)</span>
+                    <span class="text-xs mt-1 block">Processing Fee</span>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+
+    <script id="calculator-script">
+        // Global variables for telegram link color change
+        let telegramTextElements; // Will be initialized in DOMContentLoaded
+        const colors = ['#FF0000', '#00FF00', '#FFFF00', '#00FFFF', '#FF00FF']; // Red, Green, Yellow, Cyan, Magenta
+        let colorIndex = 0;
+
+        // Function to change Telegram link text color - now globally defined
+        function changeTelegramTextColor() {
+            // Ensure telegramTextElements is initialized before trying to use it
+            if (telegramTextElements) {
+                telegramTextElements.forEach(element => {
+                    element.style.color = colors[colorIndex];
+                });
+                colorIndex = (colorIndex + 1) % colors.length;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Main Calculator Type Buttons
+            const mainCategoryTabs = document.getElementById('mainCategoryTabs');
+            const mainTabButtons = document.querySelectorAll('.main-tab-button');
+            
+            // Sub-category containers and buttons
+            const loanSubCategoryTabs = document.getElementById('loanSubCategoryTabs');
+            const investmentSubCategoryTabs = document.getElementById('investmentSubCategoryTabs');
+            const loanTabButtons = document.querySelectorAll('[data-loan-type]');
+            const investmentTabButtons = document.querySelectorAll('[data-investment-type]');
+
+            // Calculator Section Groups
+            const loanCalculatorSection = document.getElementById('loanCalculatorSection');
+            const fdCalculatorSection = document.getElementById('fdCalculatorSection');
+            const rdCalculatorSection = document.getElementById('rdCalculatorSection');
+            const swpCalculatorSection = document.getElementById('swpCalculatorSection');
+
+            // Loan Specific Elements
+            const loanAmountInput = document.getElementById('loanAmount');
+            const loanAmountLabel = document.getElementById('loanAmountLabel');
+            const annualInterestRateInput = document.getElementById('annualInterestRate');
+            const tenureSelect = document.getElementById('tenure');
+            const startDateInput = document.getElementById('startDate');
+            const customTenureInput = document.getElementById('customTenure');
+            const customTenureInputDiv = document.getElementById('customTenureInputDiv');
+            const processingFeeTypeSelect = document.getElementById('processingFeeType');
+            const customPercentageInputDiv = document.getElementById('customPercentageInputDiv');
+            const customPercentageFeeInput = document.getElementById('customPercentageFee');
+            const customFlatInputDiv = document.getElementById('customFlatInputDiv');
+            const customFlatFeeInput = document.getElementById('customFlatFee');
+            const annualInterestRateDiv = document.getElementById('annualInterestRateDiv');
+            const processingFeeSection = document.getElementById('processingFeeSection');
+            const cardDiscountDiv = document.getElementById('cardDiscountDiv');
+            const cardDiscountInput = document.getElementById('cardDiscount');
+            const otherChargesDiv = document.getElementById('otherChargesDiv');
+            const otherChargesInput = document.getElementById('otherCharges');
+
+            // Loan Results Elements
+            const emiOutput = document.getElementById('emiOutput');
+            const totalPaymentOutput = document.getElementById('totalPaymentOutput');
+            const totalPaymentExcludingPFOutput = document.getElementById('totalPaymentExcludingPFOutput');
+            const totalInterestOutput = document.getElementById('totalInterestOutput');
+            const processingFeeOutput = document.getElementById('processingFeeOutput');
+            const extraPaymentCombinedOutput = document.getElementById('extraPaymentCombinedOutput');
+            const emiScheduleThead = document.getElementById('emiScheduleThead');
+            const emiScheduleBody = document.getElementById('emiScheduleBody');
+            const costBreakdownDiv = document.getElementById('costBreakdown');
+            const processingFeeMessage = document.getElementById('processingFeeMessage');
+            const emiScheduleHeading = document.getElementById('emiScheduleHeading');
+            const emiScheduleContainer = document.getElementById('emiScheduleContainer');
+            const costBreakdownHeading = document.getElementById('costBreakdownHeading');
+            const loanSummaryResults = document.getElementById('loanSummaryResults');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            // No Cost EMI specific results
+            const noCostEmiDetailsContainer = document.getElementById('noCostEmiDetailsContainer');
+            const upfrontDiscountOutput = document.getElementById('upfrontDiscountOutput');
+            const effectiveLoanAmountOutput = document.getElementById('effectiveLoanAmountOutput');
+            const cardDiscountOutput = document.getElementById('cardDiscountOutput');
+            
+            // Investment (FD/RD) Schedule Elements
+            const investmentScheduleHeading = document.getElementById('investmentScheduleHeading');
+            const investmentScheduleContainer = document.getElementById('investmentScheduleContainer');
+            const investmentScheduleThead = document.getElementById('investmentScheduleThead');
+            const investmentScheduleBody = document.getElementById('investmentScheduleBody');
+
+            // FD Specific Elements
+            const fdPrincipalInput = document.getElementById('fdPrincipal');
+            const fdAnnualInterestRateInput = document.getElementById('fdAnnualInterestRate');
+            const fdTenureValueInput = document.getElementById('fdTenureValue');
+            const fdTenureUnitSelect = document.getElementById('fdTenureUnit');
+            const fdCompoundingFrequencySelect = document.getElementById('fdCompoundingFrequency');
+            const fdStartDateInput = document.getElementById('fdStartDate');
+
+
+            // RD Specific Elements
+            const rdMonthlyDepositInput = document.getElementById('rdMonthlyDeposit');
+            const rdAnnualInterestRateInput = document.getElementById('rdAnnualInterestRate');
+            const rdTenureMonthsInput = document.getElementById('rdTenureMonths');
+            const rdStartDateInput = document.getElementById('rdStartDate');
+
+            // SWP Specific Elements
+            const swpInvestmentAmountInput = document.getElementById('swpInvestmentAmount');
+            const swpMonthlyWithdrawalValueInput = document.getElementById('swpMonthlyWithdrawalValue');
+            const swpMonthlyWithdrawalUnitSelect = document.getElementById('swpMonthlyWithdrawalUnit');
+            const swpAnnualReturnRateInput = document.getElementById('swpAnnualReturnRate');
+            const swpTenureValueInput = document.getElementById('swpTenureValue');
+            const swpTenureUnitSelect = document.getElementById('swpTenureUnit');
+            const swpStartDateInput = document.getElementById('swpStartDate');
+
+            // SWP Results Elements
+            const swpSummaryResults = document.getElementById('swpSummaryResults');
+            const swpTotalInvestmentOutput = document.getElementById('swpTotalInvestmentOutput');
+            const swpTotalWithdrawalOutput = document.getElementById('swpTotalWithdrawalOutput');
+            const swpTotalInterestEarnedOutput = document.getElementById('swpTotalInterestEarnedOutput');
+            const swpRemainingBalanceOutput = document.getElementById('swpRemainingBalanceOutput');
+            const swpScheduleHeading = document.getElementById('swpScheduleHeading');
+            const swpScheduleContainer = document.getElementById('swpScheduleContainer');
+            const swpScheduleThead = document.getElementById('swpScheduleThead');
+            const swpScheduleBody = document.getElementById('swpScheduleBody');
+
+
+            // Common Buttons
+            const calculateButton = document.getElementById('calculateButton');
+            const actionsMenuButton = document.getElementById('actionsMenuButton');
+            const actionsMenu = document.getElementById('actionsMenu');
+            const copySummaryTextButton = document.getElementById('copySummaryTextButton');
+            const downloadJpgButton = document.getElementById('downloadJpgButton');
+            const downloadPdfButton = document.getElementById('downloadPdfButton');
+            const downloadSheetButton = document.getElementById('downloadSheetButton');
+            const downloadCodeButton = document.getElementById('downloadCodeButton');
+            const downloadJsButton = document.getElementById('downloadJsButton');
+
+            // Modal elements
+            const myModal = document.getElementById('myModal');
+            const closeButton = myModal.querySelector('.close-button');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalText = document.getElementById('modalText');
+            const modalLoader = document.getElementById('modalLoader');
+
+            // Result Display Elements (shared for FD/RD)
+            const fdRdSummaryResults = document.getElementById('fdRdSummaryResults');
+            const fdRdMaturityOutput = document.getElementById('fdRdMaturityOutput');
+            const fdRdTotalDepositOutput = document.getElementById('fdRdTotalDepositOutput');
+            const fdRdInterestEarnedOutput = document.getElementById('fdRdInterestEarnedOutput');
+
+            // Downloadable content container
+            const downloadableContent = document.getElementById('downloadable-content');
+
+
+            // Error message elements
+            const loanAmountError = document.getElementById('loanAmountError');
+            const annualInterestRateError = document.getElementById('annualInterestRateError');
+            const tenureError = document.getElementById('tenureError');
+            const startDateError = document.getElementById('startDateError');
+            const processingFeeTypeError = document.getElementById('processingFeeTypeError');
+            const customPercentageFeeError = document.getElementById('customPercentageFeeError');
+            const customFlatFeeError = document.getElementById('customFlatFeeError');
+            const customTenureError = document.getElementById('customTenureError');
+            const cardDiscountError = document.getElementById('cardDiscountError');
+            const otherChargesError = document.getElementById('otherChargesError');
+            const fdPrincipalError = document.getElementById('fdPrincipalError');
+            const fdAnnualInterestRateError = document.getElementById('fdAnnualInterestRateError');
+            const fdTenureValueError = document.getElementById('fdTenureValueError');
+            const rdMonthlyDepositError = document.getElementById('rdMonthlyDepositError');
+            const rdAnnualInterestRateError = document.getElementById('rdAnnualInterestRateError');
+            const rdTenureMonthsError = document.getElementById('rdTenureMonthsError');
+            const swpInvestmentAmountError = document.getElementById('swpInvestmentAmountError');
+            const swpMonthlyWithdrawalError = document.getElementById('swpMonthlyWithdrawalError');
+            const swpAnnualReturnRateError = document.getElementById('swpAnnualReturnRateError');
+            const swpTenureValueError = document.getElementById('swpTenureValueError');
+
+
+            // Initialize telegramTextElements here, after DOM is ready
+            telegramTextElements = document.querySelectorAll('.telegram-link-text');
+            // Set interval for Telegram link text color change
+            setInterval(changeTelegramTextColor, 2000);
+
+
+            // Flags for auto-clearing inputs only on first focus for each relevant input
+            const firstClickCleared = new Map(); // Maps input ID to a boolean (true if cleared once)
+
+            let currentMainCalculatorType = 'loan';
+            let currentActiveLoanType = 'reducing_interest';
+            let currentActiveInvestmentType = 'fd';
+            let currentSummaryData = {};
+
+
+            // Constants
+            const GST_RATE = 0.18; // 18% GST
+
+            // --- Utility Functions ---
+            function formatCurrency(amount) {
+                return new Intl.NumberFormat('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(amount);
+            }
+
+            function formatDateDDMMYYYY(date) {
+                if (!date || isNaN(date.getTime())) return 'N/A';
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day} / ${month} / ${year}`;
+            }
+
+            function openModal(title, text, showLoader = false) {
+                modalTitle.textContent = title;
+                modalText.textContent = text;
+                modalLoader.classList.toggle('hidden', !showLoader);
+                myModal.classList.remove('hidden');
+            }
+
+            function closeModal() {
+                myModal.classList.add('hidden');
+            }
+
+            function setupFirstClickClear(inputElement) {
+                if (inputElement) {
+                    firstClickCleared.set(inputElement.id, false);
+                    inputElement.addEventListener('focus', () => {
+                        if (!firstClickCleared.get(inputElement.id)) {
+                            inputElement.value = '';
+                            firstClickCleared.set(inputElement.id, true);
+                        }
+                    });
+                }
+            }
+
+            function setTodayDate() {
+                startDateInput.value = '';
+                fdStartDateInput.value = '';
+                rdStartDateInput.value = '';
+                swpStartDateInput.value = '';
+            }
+
+            function resetSummaryDisplay() {
+                // Reset loan summary outputs
+                emiOutput.innerHTML = `₹0.00<br><span class="text-base text-gray-500">(0.00% of loan)</span>`;
+                totalPaymentOutput.textContent = '₹0.00';
+                totalPaymentExcludingPFOutput.textContent = '₹0.00';
+                totalInterestOutput.innerHTML = `₹0.00<br><span class="text-base text-gray-500">(0.00% of loan)</span>`;
+                processingFeeOutput.innerHTML = `₹0.00<br><span class="text-base text-gray-500">(0.00% of loan)</span>`;
+                extraPaymentCombinedOutput.innerHTML = `₹0.00<br><span class="text-base text-orange-700">(0.00% of loan)</span>`;
+
+                // Reset No Cost EMI specific display
+                upfrontDiscountOutput.textContent = '₹0.00';
+                effectiveLoanAmountOutput.textContent = '₹0.00';
+                cardDiscountOutput.textContent = '₹0.00';
+
+                // Reset FD/RD summary outputs
+                fdRdTotalDepositOutput.textContent = '₹0.00';
+                fdRdInterestEarnedOutput.textContent = '₹0.00';
+                fdRdMaturityOutput.textContent = '₹0.00';
+
+                // Reset SWP summary outputs
+                swpTotalInvestmentOutput.textContent = '₹0.00';
+                swpTotalWithdrawalOutput.textContent = '₹0.00';
+                swpTotalInterestEarnedOutput.textContent = '₹0.00';
+                swpRemainingBalanceOutput.textContent = '₹0.00';
+
+
+                // Clear tables and cost breakdown
+                emiScheduleThead.innerHTML = '';
+                emiScheduleBody.innerHTML = '';
+                investmentScheduleThead.innerHTML = '';
+                investmentScheduleBody.innerHTML = '';
+                swpScheduleThead.innerHTML = '';
+                swpScheduleBody.innerHTML = '';
+                costBreakdownDiv.innerHTML = '';
+
+                // Reset current summary data
+                currentSummaryData = {};
+
+                // Hide all summary sections and related elements initially
+                noCostEmiDetailsContainer.classList.add('hidden');
+                loanSummaryResults.classList.add('hidden');
+                fdRdSummaryResults.classList.add('hidden');
+                swpSummaryResults.classList.add('hidden');
+                processingFeeMessage.classList.add('hidden');
+                emiScheduleHeading.classList.add('hidden');
+                emiScheduleContainer.classList.add('hidden');
+                investmentScheduleHeading.classList.add('hidden');
+                investmentScheduleContainer.classList.add('hidden');
+                swpScheduleHeading.classList.add('hidden');
+                swpScheduleContainer.classList.add('hidden');
+                costBreakdownHeading.classList.add('hidden');
+                costBreakdownDiv.classList.add('hidden');
+                
+                downloadableContent.innerHTML = '';
+            }
+
+
+            // --- Clear Error Functions ---
+            function clearAllErrors() {
+                document.querySelectorAll('.text-red-500').forEach(errorDiv => {
+                    errorDiv.classList.add('hidden');
+                });
+                document.querySelectorAll('input.border-red-500, select.border-red-500').forEach(input => {
+                    input.classList.remove('border-red-500');
+                });
+            }
+
+
+            // --- Validation Functions ---
+            function validateLoanInputs() {
+                clearAllErrors();
+                let isValid = true;
+
+                if (isNaN(parseFloat(loanAmountInput.value)) || parseFloat(loanAmountInput.value) <= 0) {
+                    loanAmountInput.classList.add('border-red-500');
+                    loanAmountError.classList.remove('hidden');
+                    isValid = false;
+                }
+
+                if (currentActiveLoanType === 'no_cost_emi') {
+                    if (isNaN(parseFloat(cardDiscountInput.value)) || parseFloat(cardDiscountInput.value) < 0) {
+                        cardDiscountInput.classList.add('border-red-500');
+                        cardDiscountError.textContent = 'Please enter a valid discount.';
+                        cardDiscountError.classList.remove('hidden');
+                        isValid = false;
+                    } else if (parseFloat(cardDiscountInput.value) > parseFloat(loanAmountInput.value)) {
+                        cardDiscountInput.classList.add('border-red-500');
+                        cardDiscountError.textContent = 'Discount cannot exceed product price.';
+                        cardDiscountError.classList.remove('hidden');
+                        isValid = false;
+                    }
+                    if (isNaN(parseFloat(otherChargesInput.value)) || parseFloat(otherChargesInput.value) < 0) {
+                        otherChargesInput.classList.add('border-red-500');
+                        otherChargesError.classList.remove('hidden');
+                        isValid = false;
+                    }
+                }
+
+                if (isNaN(parseFloat(annualInterestRateInput.value)) || parseFloat(annualInterestRateInput.value) < 0) {
+                    annualInterestRateInput.classList.add('border-red-500');
+                    annualInterestRateError.classList.remove('hidden');
+                    isValid = false;
+                }
+
+                if (tenureSelect.value === 'custom') {
+                    if (isNaN(parseInt(customTenureInput.value)) || parseInt(customTenureInput.value) <= 0) {
+                        customTenureInput.classList.add('border-red-500');
+                        customTenureError.classList.remove('hidden');
+                        isValid = false;
+                    }
+                } else if (isNaN(parseInt(tenureSelect.value)) || parseInt(tenureSelect.value) <= 0) {
+                    tenureSelect.classList.add('border-red-500');
+                    tenureError.classList.remove('hidden');
+                    isValid = false;
+                }
+
+                if (processingFeeTypeSelect.value === 'custom-percentage') {
+                    if (isNaN(parseFloat(customPercentageFeeInput.value)) || parseFloat(customPercentageFeeInput.value) < 0) {
+                        customPercentageFeeInput.classList.add('border-red-500');
+                        customPercentageFeeError.classList.remove('hidden');
+                        isValid = false;
+                    }
+                } else if (processingFeeTypeSelect.value === 'custom-flat') {
+                    if (isNaN(parseFloat(customFlatFeeInput.value)) || parseFloat(customFlatFeeInput.value) < 0) {
+                        customFlatFeeInput.classList.add('border-red-500');
+                        customFlatFeeError.classList.remove('hidden');
+                        isValid = false;
+                    }
+                }
+                return isValid;
+            }
+
+            function validateFDInputs() {
+                clearAllErrors();
+                let isValid = true;
+                if (isNaN(parseFloat(fdPrincipalInput.value)) || parseFloat(fdPrincipalInput.value) <= 0) {
+                    fdPrincipalInput.classList.add('border-red-500'); fdPrincipalError.classList.remove('hidden'); isValid = false;
+                }
+                if (isNaN(parseFloat(fdAnnualInterestRateInput.value)) || parseFloat(fdAnnualInterestRateInput.value) < 0) {
+                    fdAnnualInterestRateInput.classList.add('border-red-500'); fdAnnualInterestRateError.classList.remove('hidden'); isValid = false;
+                }
+                if (isNaN(parseFloat(fdTenureValueInput.value)) || parseFloat(fdTenureValueInput.value) <= 0) {
+                    fdTenureValueInput.classList.add('border-red-500'); fdTenureValueError.classList.remove('hidden'); isValid = false;
+                }
+                return isValid;
+            }
+
+            function validateRDInputs() {
+                clearAllErrors();
+                let isValid = true;
+                if (isNaN(parseFloat(rdMonthlyDepositInput.value)) || parseFloat(rdMonthlyDepositInput.value) <= 0) {
+                    rdMonthlyDepositInput.classList.add('border-red-500'); rdMonthlyDepositError.classList.remove('hidden'); isValid = false;
+                }
+                if (isNaN(parseFloat(rdAnnualInterestRateInput.value)) || parseFloat(rdAnnualInterestRateInput.value) < 0) {
+                    rdAnnualInterestRateInput.classList.add('border-red-500'); rdAnnualInterestRateError.classList.remove('hidden'); isValid = false;
+                }
+                if (isNaN(parseInt(rdTenureMonthsInput.value)) || parseInt(rdTenureMonthsInput.value) <= 0) {
+                    rdTenureMonthsInput.classList.add('border-red-500'); rdTenureMonthsError.classList.remove('hidden'); isValid = false;
+                }
+                return isValid;
+            }
+
+            function validateSWPInputs() {
+                clearAllErrors();
+                let isValid = true;
+                if (isNaN(parseFloat(swpInvestmentAmountInput.value)) || parseFloat(swpInvestmentAmountInput.value) <= 0) {
+                    swpInvestmentAmountInput.classList.add('border-red-500'); swpInvestmentAmountError.classList.remove('hidden'); isValid = false;
+                }
+                if (isNaN(parseFloat(swpMonthlyWithdrawalValueInput.value)) || parseFloat(swpMonthlyWithdrawalValueInput.value) <= 0) {
+                    swpMonthlyWithdrawalValueInput.classList.add('border-red-500'); swpMonthlyWithdrawalError.classList.remove('hidden'); isValid = false;
+                }
+                if (isNaN(parseFloat(swpAnnualReturnRateInput.value)) || parseFloat(swpAnnualReturnRateInput.value) < 0) {
+                    swpAnnualReturnRateInput.classList.add('border-red-500'); swpAnnualReturnRateError.classList.remove('hidden'); isValid = false;
+                }
+                if (isNaN(parseInt(swpTenureValueInput.value)) || parseInt(swpTenureValueInput.value) <= 0) {
+                    swpTenureValueInput.classList.add('border-red-500'); swpTenureValueError.classList.remove('hidden'); isValid = false;
+                }
+                return isValid;
+            }
+
+
+            // --- Processing Fee Calculation Utility ---
+            function getProcessingFee(principal) {
+                let processingFeeBeforeGST = 0;
+                const pfType = processingFeeTypeSelect.value;
+                if (pfType === 'standard-16percent') processingFeeBeforeGST = principal * 0.01;
+                else if (pfType === 'standard-18flat') processingFeeBeforeGST = 199;
+                else if (pfType === 'custom-percentage') processingFeeBeforeGST = principal * (parseFloat(customPercentageFeeInput.value) / 100);
+                else if (pfType === 'custom-flat') processingFeeBeforeGST = parseFloat(customFlatFeeInput.value);
+                return processingFeeBeforeGST * (1 + GST_RATE);
+            }
+            
+            function getProcessingFeeText() {
+                const pfType = processingFeeTypeSelect.value;
+                switch (pfType) {
+                    case 'standard-16percent': return "1% of Loan Amount + 18% GST";
+                    case 'standard-18flat': return "₹199 Flat + 18% GST";
+                    case 'custom-percentage': return `${customPercentageFeeInput.value}% of Loan Amount + 18% GST`;
+                    case 'custom-flat': return `₹${customFlatFeeInput.value} Flat Fee + 18% GST`;
+                    default: return "N/A";
+                }
+            }
+
+
+            // --- Calculator Logic Functions ---
+            function calculateReducingInterestEMI() {
+                if (!validateLoanInputs()) { resetSummaryDisplay(); return; }
+
+                const principal = parseFloat(loanAmountInput.value);
+                const annualInterestRate = parseFloat(annualInterestRateInput.value);
+                const tenureMonths = tenureSelect.value === 'custom' ? parseInt(customTenureInput.value) : parseInt(tenureSelect.value);
+                const startDateStr = startDateInput.value;
+                const hasDate = !!startDateStr;
+                const monthlyInterestRate = (annualInterestRate / 12) / 100;
+                
+                let emiPrincipalAndInterest = (monthlyInterestRate === 0) ? (principal / tenureMonths) : (principal * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenureMonths)) / (Math.pow(1 + monthlyInterestRate, tenureMonths) - 1);
+                
+                let totalInterestPaid = 0, totalGSTOnInterest = 0, totalPrincipalPaid = 0, balance = principal;
+                const schedule = [];
+                let currentDate = hasDate ? new Date(startDateStr) : null;
+                let endDate = null;
+
+                for (let i = 1; i <= tenureMonths; i++) {
+                    const interestForMonth = balance * monthlyInterestRate;
+                    const gstOnInterestForMonth = interestForMonth * GST_RATE;
+                    let principalForMonth = emiPrincipalAndInterest - interestForMonth;
+                    if (i === tenureMonths) { principalForMonth = balance; }
+                    const totalEmiDue = principalForMonth + interestForMonth + gstOnInterestForMonth;
+                    balance -= principalForMonth;
+                    totalInterestPaid += interestForMonth;
+                    totalGSTOnInterest += gstOnInterestForMonth;
+                    totalPrincipalPaid += principalForMonth;
+                    if (balance < 0.01) balance = 0;
+                    
+                    if (hasDate) {
+                        schedule.push({ month: i, date: formatDateDDMMYYYY(currentDate), principal: principalForMonth, interest: interestForMonth, gstOnInterest: gstOnInterestForMonth, totalEmiDue: totalEmiDue, balance: balance });
+                        if(i === tenureMonths) endDate = new Date(currentDate);
+                        currentDate.setMonth(currentDate.getMonth() + 1);
+                    } else {
+                        schedule.push({ month: i, date: 'N/A', principal: principalForMonth, interest: interestForMonth, gstOnInterest: gstOnInterestForMonth, totalEmiDue: totalEmiDue, balance: balance });
+                    }
+                }
+
+                const totalProcessingFee = getProcessingFee(principal);
+                const totalPayment = totalPrincipalPaid + totalInterestPaid + totalGSTOnInterest + totalProcessingFee;
+                const totalExtraPayment = totalInterestPaid + totalGSTOnInterest + totalProcessingFee;
+
+                currentSummaryData = {
+                    type: 'reducing_interest', hasDate, principal, annualInterestRate, tenureMonths, perMonthEMI: schedule.length > 0 ? schedule[0].totalEmiDue : 0,
+                    totalInterest: totalInterestPaid + totalGSTOnInterest, interestOnly: totalInterestPaid, gstOnInterest: totalGSTOnInterest,
+                    totalProcessingFee, totalPayment, totalExtraPayment,
+                    interestPercentage: (principal > 0) ? ((totalInterestPaid + totalGSTOnInterest) / principal) * 100 : 0,
+                    processingFeePercentage: (principal > 0) ? (totalProcessingFee / principal) * 100 : 0,
+                    emiPercentage: (principal > 0 && schedule.length > 0) ? (schedule[0].totalEmiDue / principal * 100) : 0,
+                    tenureYears: (tenureMonths / 12).toFixed(2),
+                    extraPaymentPercentage: (principal > 0) ? (totalExtraPayment / principal) * 100 : 0, schedule,
+                    startDate: hasDate ? formatDateDDMMYYYY(new Date(startDateStr)) : 'N/A',
+                    endDate: hasDate && endDate ? formatDateDDMMYYYY(endDate) : 'N/A',
+                    processingFeeText: getProcessingFeeText()
+                };
+                displayLoanResults(currentSummaryData);
+                populateDownloadableContent(currentSummaryData);
+            }
+            
+            function calculateNewNoCostEMI() {
+                if (!validateLoanInputs()) { resetSummaryDisplay(); return; }
+
+                const productPrice = parseFloat(loanAmountInput.value);
+                const cardDiscount = parseFloat(cardDiscountInput.value) || 0;
+                const otherCharges = parseFloat(otherChargesInput.value) || 0;
+                const amountAfterCardDiscount = productPrice - cardDiscount;
+
+                const annualInterestRate = parseFloat(annualInterestRateInput.value);
+                const tenureMonths = tenureSelect.value === 'custom' ? parseInt(customTenureInput.value) : parseInt(tenureSelect.value);
+                const startDateStr = startDateInput.value;
+                const hasDate = !!startDateStr;
+                const monthlyInterestRate = (annualInterestRate / 12) / 100;
+
+                let effectiveLoanAmount;
+                if (monthlyInterestRate > 0) {
+                     const emiFactor = (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenureMonths)) / (Math.pow(1 + monthlyInterestRate, tenureMonths) - 1);
+                     const totalRepaymentFactor = emiFactor * tenureMonths;
+                     effectiveLoanAmount = amountAfterCardDiscount / totalRepaymentFactor;
+                } else {
+                    effectiveLoanAmount = amountAfterCardDiscount;
+                }
+                
+                const upfrontDiscount = amountAfterCardDiscount - effectiveLoanAmount;
+
+                let totalInterestPaid = 0, totalGSTOnInterest = 0, totalPrincipalPaid = 0, balance = effectiveLoanAmount;
+                const schedule = [];
+                let currentDate = hasDate ? new Date(startDateStr) : null;
+                let endDate = null;
+                const emiPrincipalAndInterest = amountAfterCardDiscount / tenureMonths;
+
+                for (let i = 1; i <= tenureMonths; i++) {
+                    const interestForMonth = balance * monthlyInterestRate;
+                    const gstOnInterestForMonth = interestForMonth * GST_RATE;
+                    let principalForMonth = emiPrincipalAndInterest - interestForMonth;
+                    if (i === tenureMonths) { principalForMonth = balance; }
+                    const totalEmiDue = principalForMonth + interestForMonth + gstOnInterestForMonth;
+                    balance -= principalForMonth;
+                    totalInterestPaid += interestForMonth;
+                    totalGSTOnInterest += gstOnInterestForMonth;
+                    totalPrincipalPaid += principalForMonth;
+                    if (balance < 0.01) balance = 0;
+                    
+                    if (hasDate) {
+                        schedule.push({ month: i, date: formatDateDDMMYYYY(currentDate), principal: principalForMonth, interest: interestForMonth, gstOnInterest: gstOnInterestForMonth, totalEmiDue: totalEmiDue, balance: balance });
+                         if(i === tenureMonths) endDate = new Date(currentDate);
+                        currentDate.setMonth(currentDate.getMonth() + 1);
+                    } else {
+                        schedule.push({ month: i, date: 'N/A', principal: principalForMonth, interest: interestForMonth, gstOnInterest: gstOnInterestForMonth, totalEmiDue: totalEmiDue, balance: balance });
+                    }
+                }
+
+                const totalProcessingFee = getProcessingFee(productPrice);
+                const totalExtraPayment = totalGSTOnInterest + totalProcessingFee + otherCharges;
+                const totalPayment = amountAfterCardDiscount + totalExtraPayment;
+
+                currentSummaryData = {
+                    type: 'no_cost_emi', hasDate, principal: productPrice, cardDiscount, otherCharges, amountAfterCardDiscount, effectiveLoanAmount, upfrontDiscount, annualInterestRate, tenureMonths, perMonthEMI: schedule.length > 0 ? schedule[0].totalEmiDue : 0,
+                    totalInterest: totalInterestPaid + totalGSTOnInterest, totalProcessingFee, totalPayment, totalExtraPayment,
+                    interestPercentage: (productPrice > 0) ? ((totalInterestPaid + totalGSTOnInterest) / productPrice) * 100 : 0,
+                    processingFeePercentage: (productPrice > 0) ? (totalProcessingFee / productPrice) * 100 : 0,
+                    otherChargesPercentage: (productPrice > 0) ? (otherCharges / productPrice) * 100 : 0,
+                    emiPercentage: (productPrice > 0 && schedule.length > 0) ? (schedule[0].totalEmiDue / productPrice * 100) : 0,
+                    tenureYears: (tenureMonths / 12).toFixed(2),
+                    extraPaymentPercentage: (productPrice > 0) ? (totalExtraPayment / productPrice) * 100 : 0, schedule,
+                    startDate: hasDate ? formatDateDDMMYYYY(new Date(startDateStr)) : 'N/A',
+                    endDate: hasDate && endDate ? formatDateDDMMYYYY(endDate) : 'N/A',
+                    processingFeeText: getProcessingFeeText()
+                };
+                displayLoanResults(currentSummaryData);
+                populateDownloadableContent(currentSummaryData);
+            }
+
+
+            function calculateFlatInterestEMI() {
+                if (!validateLoanInputs()) { resetSummaryDisplay(); return; }
+                const principal = parseFloat(loanAmountInput.value);
+                const annualInterestRate = parseFloat(annualInterestRateInput.value);
+                const tenureMonths = tenureSelect.value === 'custom' ? parseInt(customTenureInput.value) : parseInt(tenureSelect.value);
+                const startDateStr = startDateInput.value;
+                const hasDate = !!startDateStr;
+                const totalInterestOnPrincipal = principal * (annualInterestRate / 100) * (tenureMonths / 12);
+                const totalGSTOnInterest = totalInterestOnPrincipal * GST_RATE;
+                const emi = (principal + totalInterestOnPrincipal + totalGSTOnInterest) / tenureMonths;
+                const totalProcessingFee = getProcessingFee(principal);
+                const overallTotalPayment = principal + totalInterestOnPrincipal + totalGSTOnInterest + totalProcessingFee;
+                const totalExtraPayment = totalInterestOnPrincipal + totalGSTOnInterest + totalProcessingFee;
+                const schedule = [];
+                let balance = principal;
+                let currentDate = hasDate ? new Date(startDateStr) : null;
+                let endDate = null;
+                const principalPerMonth = principal / tenureMonths;
+                const interestPerMonth = totalInterestOnPrincipal / tenureMonths;
+                const gstPerMonth = totalGSTOnInterest / tenureMonths;
+                for (let i = 1; i <= tenureMonths; i++) {
+                    balance -= principalPerMonth; if (balance < 0.01) balance = 0;
+                    if (hasDate) {
+                        schedule.push({ month: i, date: formatDateDDMMYYYY(currentDate), principal: principalPerMonth, interest: interestPerMonth, gstOnInterest: gstPerMonth, totalEmiDue: emi, balance: balance });
+                         if(i === tenureMonths) endDate = new Date(currentDate);
+                        currentDate.setMonth(currentDate.getMonth() + 1);
+                    } else {
+                        schedule.push({ month: i, date: 'N/A', principal: principalPerMonth, interest: interestPerMonth, gstOnInterest: gstPerMonth, totalEmiDue: emi, balance: balance });
+                    }
+                }
+                currentSummaryData = {
+                    type: 'flat_interest', hasDate, principal, annualInterestRate, tenureMonths, perMonthEMI: emi, 
+                    totalInterest: totalInterestOnPrincipal + totalGSTOnInterest, interestOnly: totalInterestOnPrincipal, gstOnInterest: totalGSTOnInterest,
+                    totalProcessingFee, totalPayment: overallTotalPayment, totalExtraPayment, interestPercentage: (principal > 0) ? ((totalInterestOnPrincipal + totalGSTOnInterest) / principal) * 100 : 0,
+                    processingFeePercentage: (principal > 0) ? (totalProcessingFee / principal) * 100 : 0, emiPercentage: (principal > 0) ? (emi / principal * 100) : 0,
+                    tenureYears: (tenureMonths / 12).toFixed(2), extraPaymentPercentage: (principal > 0) ? (totalExtraPayment / principal) * 100 : 0, schedule,
+                    startDate: hasDate ? formatDateDDMMYYYY(new Date(startDateStr)) : 'N/A',
+                    endDate: hasDate && endDate ? formatDateDDMMYYYY(endDate) : 'N/A',
+                    processingFeeText: getProcessingFeeText()
+                };
+                displayLoanResults(currentSummaryData);
+                populateDownloadableContent(currentSummaryData);
+            }
+            
+            function calculateFD() {
+                if (!validateFDInputs()) { resetSummaryDisplay(); return; }
+                const principal = parseFloat(fdPrincipalInput.value);
+                const annualRate = parseFloat(fdAnnualInterestRateInput.value);
+                let tenureValue = parseFloat(fdTenureValueInput.value);
+                const tenureUnit = fdTenureUnitSelect.value;
+                const compoundingFrequency = 4; // Hardcoded to Quarterly
+                const startDateStr = fdStartDateInput.value;
+                const hasDate = !!startDateStr;
+
+                let tenureMonths;
+                let tenureYears;
+
+                if (tenureUnit === 'years') {
+                    tenureYears = tenureValue;
+                    tenureMonths = tenureValue * 12;
+                } else { // months
+                    tenureMonths = tenureValue;
+                    tenureYears = tenureValue / 12;
+                }
+
+                const rateDecimal = annualRate / 100;
+                const maturityAmount = principal * Math.pow((1 + rateDecimal / compoundingFrequency), (compoundingFrequency * tenureYears));
+                const interestEarned = maturityAmount - principal;
+
+                const schedule = [];
+                let balance = principal;
+                let currentDate = hasDate ? new Date(startDateStr) : null;
+                let endDate = null;
+                const compoundingInterval = 12 / compoundingFrequency;
+                for (let i = 1; i <= tenureMonths; i++) {
+                    const openingBalance = balance;
+                    let interestForPeriod = 0;
+                    if (i % compoundingInterval === 0) {
+                        interestForPeriod = balance * (rateDecimal / compoundingFrequency);
+                        balance += interestForPeriod;
+                    }
+                    if (hasDate) {
+                        schedule.push({ month: i, date: formatDateDDMMYYYY(currentDate), openingBalance: openingBalance, interest: interestForPeriod, closingBalance: balance });
+                         if(i === tenureMonths) endDate = new Date(currentDate);
+                        currentDate.setMonth(currentDate.getMonth() + 1);
+                    } else {
+                         schedule.push({ month: i, date: 'N/A', openingBalance: openingBalance, interest: interestForPeriod, closingBalance: balance });
+                    }
+                }
+                currentSummaryData = {
+                    type: 'fd', hasDate, principal, annualRate, tenureYears, tenureMonths, compoundingFrequency,
+                    totalDeposit: principal, interestEarned, maturityAmount, schedule,
+                    startDate: hasDate ? formatDateDDMMYYYY(new Date(startDateStr)) : 'N/A',
+                    endDate: hasDate && endDate ? formatDateDDMMYYYY(endDate) : 'N/A'
+                };
+                displayFdRdResults(currentSummaryData);
+                populateDownloadableContent(currentSummaryData);
+            }
+
+            function calculateRD() {
+                if (!validateRDInputs()) { resetSummaryDisplay(); return; }
+                const monthlyDeposit = parseFloat(rdMonthlyDepositInput.value);
+                const annualRate = parseFloat(rdAnnualInterestRateInput.value);
+                const tenureMonths = parseInt(rdTenureMonthsInput.value);
+                const startDateStr = rdStartDateInput.value;
+                const hasDate = !!startDateStr;
+                const monthlyRate = (annualRate / 12) / 100;
+                let maturityAmount = 0;
+                if(monthlyRate > 0) {
+                    maturityAmount = monthlyDeposit * ((Math.pow((1 + monthlyRate), tenureMonths) - 1) / monthlyRate) * (1 + monthlyRate);
+                } else {
+                    maturityAmount = monthlyDeposit * tenureMonths;
+                }
+                const totalDeposited = monthlyDeposit * tenureMonths;
+                const interestEarned = maturityAmount - totalDeposited;
+                
+                const schedule = [];
+                let balance = 0;
+                let currentDate = hasDate ? new Date(startDateStr) : null;
+                let endDate = null;
+                for (let i = 1; i <= tenureMonths; i++) {
+                    const openingBalance = balance;
+                    const interestForMonth = (balance + monthlyDeposit) * monthlyRate;
+                    balance += monthlyDeposit + interestForMonth;
+                    if (hasDate) {
+                        schedule.push({ month: i, date: formatDateDDMMYYYY(currentDate), openingBalance: openingBalance, deposit: monthlyDeposit, interest: interestForMonth, closingBalance: balance });
+                         if(i === tenureMonths) endDate = new Date(currentDate);
+                        currentDate.setMonth(currentDate.getMonth() + 1);
+                    } else {
+                        schedule.push({ month: i, date: 'N/A', openingBalance: openingBalance, deposit: monthlyDeposit, interest: interestForMonth, closingBalance: balance });
+                    }
+                }
+                currentSummaryData = {
+                    type: 'rd', hasDate, monthlyDeposit, annualRate, tenureMonths,
+                    totalDeposited, interestEarned, maturityAmount, schedule,
+                    startDate: hasDate ? formatDateDDMMYYYY(new Date(startDateStr)) : 'N/A',
+                    endDate: hasDate && endDate ? formatDateDDMMYYYY(endDate) : 'N/A'
+                };
+                displayFdRdResults(currentSummaryData);
+                populateDownloadableContent(currentSummaryData);
+            }
+
+            function calculateSWP() {
+                if (!validateSWPInputs()) { resetSummaryDisplay(); return; }
+
+                const initialInvestment = parseFloat(swpInvestmentAmountInput.value);
+                const withdrawalValue = parseFloat(swpMonthlyWithdrawalValueInput.value);
+                const withdrawalUnit = swpMonthlyWithdrawalUnitSelect.value;
+                const annualReturnRate = parseFloat(swpAnnualReturnRateInput.value);
+                let tenureValue = parseFloat(swpTenureValueInput.value);
+                const tenureUnit = swpTenureUnitSelect.value;
+                const startDateStr = swpStartDateInput.value;
+                const hasDate = !!startDateStr;
+
+                let tenureMonths;
+                if (tenureUnit === 'years') {
+                    tenureMonths = tenureValue * 12;
+                } else { // months
+                    tenureMonths = tenureValue;
+                }
+                
+                const monthlyReturnRate = (annualReturnRate / 12) / 100;
+                const monthlyWithdrawal = withdrawalUnit === 'percent' ? (initialInvestment * (withdrawalValue / 100)) : withdrawalValue;
+
+                let remainingBalance = initialInvestment;
+                let totalWithdrawn = 0;
+                let totalInterestEarned = 0;
+                const schedule = [];
+                let currentDate = hasDate ? new Date(startDateStr) : null;
+                let endDate = null;
+
+                for (let i = 1; i <= tenureMonths; i++) {
+                    const openingBalance = remainingBalance;
+                    let interestForMonth = 0;
+
+                    if (remainingBalance > 0 && monthlyReturnRate > 0) {
+                        interestForMonth = remainingBalance * monthlyReturnRate;
+                        remainingBalance += interestForMonth;
+                        totalInterestEarned += interestForMonth;
+                    }
+
+                    let actualWithdrawal = Math.min(monthlyWithdrawal, remainingBalance);
+                    remainingBalance -= actualWithdrawal;
+                    totalWithdrawn += actualWithdrawal;
+
+                    if (remainingBalance < 0.01) remainingBalance = 0;
+
+                    if (hasDate) {
+                        schedule.push({
+                            month: i, date: formatDateDDMMYYYY(currentDate), openingBalance: openingBalance,
+                            withdrawal: actualWithdrawal, interest: interestForMonth, closingBalance: remainingBalance
+                        });
+                        if (i === tenureMonths) endDate = new Date(currentDate);
+                        currentDate.setMonth(currentDate.getMonth() + 1);
+                    } else {
+                        schedule.push({
+                            month: i, date: 'N/A', openingBalance: openingBalance,
+                            withdrawal: actualWithdrawal, interest: interestForMonth, closingBalance: remainingBalance
+                        });
+                    }
+                }
+
+                currentSummaryData = {
+                    type: 'swp', hasDate, initialInvestment, monthlyWithdrawal, annualReturnRate, tenureYears: tenureMonths / 12, tenureMonths,
+                    totalWithdrawn, totalInterestEarned, remainingBalance, schedule,
+                    startDate: hasDate ? formatDateDDMMYYYY(new Date(startDateStr)) : 'N/A',
+                    endDate: hasDate && endDate ? formatDateDDMMYYYY(endDate) : 'N/A'
+                };
+                displaySwpResults(currentSummaryData);
+                populateDownloadableContent(currentSummaryData);
+            }
+
+
+            function masterCalculate() {
+                downloadableContent.innerHTML = '';
+                if (currentMainCalculatorType === 'loan') {
+                    if (currentActiveLoanType === 'reducing_interest') calculateReducingInterestEMI();
+                    else if (currentActiveLoanType === 'no_cost_emi') calculateNewNoCostEMI();
+                    else if (currentActiveLoanType === 'flat_interest') calculateFlatInterestEMI();
+                } else if (currentMainCalculatorType === 'investment') {
+                    if (currentActiveInvestmentType === 'fd') calculateFD();
+                    else if (currentActiveInvestmentType === 'rd') calculateRD();
+                    else if (currentActiveInvestmentType === 'swp') calculateSWP();
+                }
+            }
+            
+            function copySummary(e) {
+                if (e) e.preventDefault();
+                actionsMenu.classList.add('hidden');
+
+                if (!currentSummaryData || !currentSummaryData.type) {
+                    openModal('Error', 'No data to copy. Please calculate first.');
+                    return;
+                }
+                
+                if (currentMainCalculatorType === 'loan' && !validateLoanInputs()) { openModal('Validation Error', 'Please correct inputs before copying.'); return; }
+                if (currentMainCalculatorType === 'investment') {
+                    if (currentActiveInvestmentType === 'fd' && !validateFDInputs()) { openModal('Validation Error', 'Please correct inputs before copying.'); return; }
+                    if (currentActiveInvestmentType === 'rd' && !validateRDInputs()) { openModal('Validation Error', 'Please correct inputs before copying.'); return; }
+                    if (currentActiveInvestmentType === 'swp' && !validateSWPInputs()) { openModal('Validation Error', 'Please correct inputs before copying.'); return; }
+                }
+
+
+                const data = currentSummaryData;
+                let reportText = '';
+
+                if (data.type === 'no_cost_emi') {
+                    const loanTypeLabel = "NO-COST EMI";
+                    reportText = `${loanTypeLabel} ,📄 LOAN SUMMARY
+• Product Price: ${formatCurrency(data.principal)}
+• Card Discount: ${formatCurrency(data.cardDiscount)}
+• Annual Interest Rate: ${data.annualInterestRate}%
+• Tenure: ${data.tenureMonths} months
+• Processing Fee (incl. GST): ${formatCurrency(data.totalProcessingFee)} (${data.processingFeePercentage.toFixed(2)}% of product price)
+• Other Charges: ${formatCurrency(data.otherCharges)}
+
+💳 MONTHLY EMI
+• EMI Amount: ${formatCurrency(data.perMonthEMI)} per month
+• Equivalent to ${data.emiPercentage.toFixed(2)}% of the product price per month
+
+💡 NO-COST EMI BREAKDOWN
+• Price After Discount: ${formatCurrency(data.amountAfterCardDiscount)}
+• Bank's Upfront Discount (Hidden Interest): ${formatCurrency(data.upfrontDiscount)}
+• Effective Loan Amount: ${formatCurrency(data.effectiveLoanAmount)}
+
+💼 TOTAL COST OVERVIEW
+• Total Payment (incl. all charges): ${formatCurrency(data.totalPayment)}
+• Total GST on Interest: ${formatCurrency(data.totalInterest - data.upfrontDiscount)}
+• Total Extra Cost (GST + PF + Other): ${formatCurrency(data.totalExtraPayment)} (${data.extraPaymentPercentage.toFixed(2)}% of product price)
+
+✅ This summary reveals the true cost of a "No-Cost" EMI. The interest is often included as an upfront discount from the bank, but you still pay for processing fees, GST, and other charges.`;
+
+                } else if (data.type === 'reducing_interest' || data.type === 'flat_interest') {
+                    const loanTypeLabel = data.type === 'reducing_interest' ? "REDUCING INTEREST" : "FLAT INTEREST";
+                    reportText = `${loanTypeLabel} ,📄 LOAN SUMMARY
+• Loan Amount: ${formatCurrency(data.principal)}
+• Tenure: ${data.tenureMonths} months
+• Annual Interest Rate: ${data.annualInterestRate}%
+• Processing Fee (incl. GST): ${formatCurrency(data.totalProcessingFee)} (${data.processingFeePercentage.toFixed(2)}% of loan amount)
+
+💳 MONTHLY EMI
+• EMI Amount: ${formatCurrency(data.perMonthEMI)} per month
+• Equivalent to ${data.emiPercentage.toFixed(2)}% of the loan amount per month
+
+💼 TOTAL REPAYMENT OVERVIEW
+• Total Payment (incl. all charges): ${formatCurrency(data.totalPayment)}
+• Total Interest (incl. GST): ${formatCurrency(data.totalInterest)} (${data.interestPercentage.toFixed(2)}% of loan amount)
+• Total Extra Payment: ${formatCurrency(data.totalExtraPayment)} (${data.extraPaymentPercentage.toFixed(2)}% of loan amount)
+
+✅ This summary reflects the complete cost of borrowing, including interest, GST, and processing charges.`;
+
+                } else if (data.type === 'fd') {
+                    const apy = (Math.pow(1 + (data.annualRate / 100) / data.compoundingFrequency, data.compoundingFrequency) - 1) * 100;
+                    reportText = `🏦 FIXED DEPOSIT (FD) SUMMARY
+• Deposit Amount: ${formatCurrency(data.principal)}
+• Tenure: ${data.tenureYears.toFixed(1)} years (${data.tenureMonths.toFixed(0)} months)
+• Interest Rate (Annual): ${data.annualRate}%
+• Compounding Frequency: Quarterly
+
+💰 MATURITY DETAILS
+• Maturity Amount: ${formatCurrency(data.maturityAmount)}
+• Total Interest Earned: ${formatCurrency(data.interestEarned)}
+• Effective Yield: ${apy.toFixed(2)}%
+• Maturity Date: ${data.endDate}
+
+✅ This summary provides a clear view of your fixed deposit returns.`;
+
+                } else if (data.type === 'rd') {
+                    const monthlyRate = (data.annualRate / 100) / 12;
+                    const apy = (Math.pow(1 + monthlyRate, 12) - 1) * 100;
+                    reportText = `💸 RECURRING DEPOSIT (RD) SUMMARY
+• Monthly Deposit: ${formatCurrency(data.monthlyDeposit)}
+• Tenure: ${data.tenureMonths} months
+• Total Investment: ${formatCurrency(data.totalDeposited)}
+• Interest Rate (Annual): ${data.annualRate}%
+
+💰 MATURITY DETAILS
+• Maturity Amount: ${formatCurrency(data.maturityAmount)}
+• Total Interest Earned: ${formatCurrency(data.interestEarned)}
+• Effective Yield: ${apy.toFixed(2)}%
+• Maturity Date: ${data.endDate}
+
+✅ This summary outlines your recurring deposit growth.`;
+                } else if (data.type === 'swp') {
+                    reportText = `📈 SYSTEMATIC WITHDRAWAL PLAN (SWP) SUMMARY
+• Initial Investment: ${formatCurrency(data.initialInvestment)}
+• Monthly Withdrawal: ${formatCurrency(data.monthlyWithdrawal)}
+• Expected Annual Return: ${data.annualReturnRate}%
+• Tenure: ${data.tenureYears.toFixed(1)} years (${data.tenureMonths.toFixed(0)} months)
+
+💰 WITHDRAWAL & GROWTH DETAILS
+• Total Amount Withdrawn: ${formatCurrency(data.totalWithdrawn)}
+• Total Interest Earned: ${formatCurrency(data.totalInterestEarned)}
+• Remaining Balance: ${formatCurrency(data.remainingBalance)}
+
+✅ This summary illustrates the performance of your SWP.`;
+                }
+
+                const textArea = document.createElement("textarea");
+                textArea.value = reportText.trim();
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    const successful = document.execCommand('copy');
+                    openModal(successful ? 'Summary Copied!' : 'Copy Failed', 'The detailed report has been copied to your clipboard.');
+                } catch (err) {
+                    openModal('Copy Error', 'An error occurred while trying to copy the summary.');
+                    console.error('Copy to clipboard failed: ', err);
+                }
+                document.body.removeChild(textArea);
+            }
+            
+            // --- UI Display Functions ---
+            function displayLoanResults(data) {
+                const isNoCost = data.type === 'no_cost_emi';
+                noCostEmiDetailsContainer.classList.toggle('hidden', !isNoCost);
+                if(isNoCost) {
+                    cardDiscountOutput.textContent = formatCurrency(data.cardDiscount);
+                    upfrontDiscountOutput.textContent = formatCurrency(data.upfrontDiscount);
+                    effectiveLoanAmountOutput.textContent = formatCurrency(data.effectiveLoanAmount);
+                }
+                
+                emiOutput.innerHTML = `${formatCurrency(data.perMonthEMI)}<br><span class="text-base text-gray-500">(${data.emiPercentage.toFixed(2)}% of amount)</span>`;
+                totalPaymentOutput.textContent = formatCurrency(data.totalPayment);
+                totalPaymentExcludingPFOutput.textContent = formatCurrency(data.totalPayment - data.totalProcessingFee - (data.otherCharges || 0));
+                
+                let interestLabel = isNoCost ? 'Total Bank Interest (as Discount)' : 'Total Interest (incl. GST)';
+                totalInterestOutput.innerHTML = `${formatCurrency(data.totalInterest)}<br><span class="text-base text-gray-500" id="totalInterestPercent">(${data.interestPercentage.toFixed(2)}% of amount)</span>`;
+                document.getElementById('loanSummaryTotalInterestLabel').textContent = interestLabel;
+                
+                processingFeeOutput.innerHTML = `${formatCurrency(data.totalProcessingFee)}<br><span class="text-base text-gray-500">(${data.processingFeePercentage.toFixed(2)}% of amount)</span>`;
+                
+                let extraPaymentLabel = isNoCost ? 'Total Extra Cost (GST + PF + Other)' : 'Total Extra Payment';
+                extraPaymentCombinedOutput.innerHTML = `${formatCurrency(data.totalExtraPayment)}<br><span class="text-base text-orange-700">(${data.extraPaymentPercentage.toFixed(2)}% of amount)</span>`;
+                document.getElementById('loanSummaryExtraPaymentLabel').textContent = extraPaymentLabel;
+
+                emiScheduleThead.innerHTML = `<tr>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                    ${data.hasDate ? '<th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EMI Date</th>' : ''}
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-principal">Principal</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-interest">Interest</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-gst-interest">GST on Interest</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-total-emi">Total EMI Due</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">Balance</th>
+                </tr>`;
+
+                emiScheduleBody.innerHTML = '';
+                data.schedule.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.classList.add('hover:bg-gray-50');
+                    tr.innerHTML = `
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${row.month}</td>
+                        ${data.hasDate ? `<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${row.date}</td>` : ''}
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">${formatCurrency(row.principal)}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">${formatCurrency(row.interest)}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">${formatCurrency(row.gstOnInterest)}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold">${formatCurrency(row.totalEmiDue)}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-red-bold">${formatCurrency(row.balance)}</td>
+                    `;
+                    emiScheduleBody.appendChild(tr);
+                });
+
+                costBreakdownDiv.innerHTML = '';
+                const baseAmountForPercent = data.principal;
+
+                if (data.type === 'reducing_interest' || data.type === 'flat_interest') {
+                    addCostCircle('Principal', baseAmountForPercent, 'cost-circle-principal', baseAmountForPercent);
+                    addCostCircle('Interest Paid', data.interestOnly, 'cost-circle-interest', baseAmountForPercent);
+                    addCostCircle('GST on Interest', data.gstOnInterest, 'cost-circle-gst-interest', baseAmountForPercent);
+                    addCostCircle('Processing Fee', data.totalProcessingFee, 'cost-circle-processing', baseAmountForPercent);
+                } else if (data.type === 'no_cost_emi') {
+                    addCostCircle('Financed Amt', data.amountAfterCardDiscount, 'cost-circle-principal', baseAmountForPercent);
+                    addCostCircle('Card Discount', data.cardDiscount, 'cost-circle-card-discount', baseAmountForPercent);
+                    addCostCircle('GST on Int.', data.totalInterest - data.upfrontDiscount, 'cost-circle-gst-interest', baseAmountForPercent);
+                    addCostCircle('Processing Fee', data.totalProcessingFee, 'cost-circle-processing', baseAmountForPercent);
+                    addCostCircle('Other Charges', data.otherCharges, 'cost-circle-other-charges', baseAmountForPercent);
+                    addCostCircle('Bank Interest (Discounted)', data.upfrontDiscount, 'cost-circle-subsidized', baseAmountForPercent);
+                }
+
+                showLoanResultsSections();
+            }
+            
+            function displayFdRdResults(data) {
+                fdRdTotalDepositOutput.textContent = formatCurrency(data.type === 'fd' ? data.totalDeposit : data.totalDeposited);
+                fdRdInterestEarnedOutput.textContent = formatCurrency(data.interestEarned);
+                fdRdMaturityOutput.textContent = formatCurrency(data.maturityAmount);
+
+                investmentScheduleThead.innerHTML = '';
+                investmentScheduleBody.innerHTML = '';
+                let headerRow = '<tr><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>';
+                if(data.hasDate) headerRow += '<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>';
+                headerRow += '<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-principal">Opening Balance</th>';
+                if (data.type === 'rd') headerRow += '<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-deposit">Monthly Deposit</th>';
+                headerRow += '<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-interest">Interest Earned</th>';
+                headerRow += '<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-balance">Closing Balance</th></tr>';
+                investmentScheduleThead.innerHTML = headerRow;
+
+                data.schedule.forEach(row => {
+                    let bodyRow = `<tr class="hover:bg-gray-50"><td class="px-4 py-2 text-sm font-medium text-gray-900">${row.month}</td>`;
+                    if(data.hasDate) bodyRow += `<td class="px-4 py-2 text-sm text-gray-500">${row.date}</td>`;
+                    bodyRow += `<td class="px-4 py-2 text-sm">${formatCurrency(row.openingBalance)}</td>`;
+                    if (data.type === 'rd') bodyRow += `<td class="px-4 py-2 text-sm font-semibold">${formatCurrency(row.deposit)}</td>`;
+                    bodyRow += `<td class="px-4 py-2 text-sm font-semibold">${formatCurrency(row.interest)}</td>`;
+                    bodyRow += `<td class="px-4 py-2 text-sm font-bold text-green-700">${formatCurrency(row.closingBalance)}</td></tr>`;
+                    investmentScheduleBody.innerHTML += bodyRow;
+                });
+                
+                showInvestmentResultsSections();
+            }
+
+            function displaySwpResults(data) {
+                swpTotalInvestmentOutput.textContent = formatCurrency(data.initialInvestment);
+                swpTotalWithdrawalOutput.textContent = formatCurrency(data.totalWithdrawn);
+                swpTotalInterestEarnedOutput.textContent = formatCurrency(data.totalInterestEarned);
+                swpRemainingBalanceOutput.textContent = formatCurrency(data.remainingBalance);
+
+                swpScheduleThead.innerHTML = '';
+                swpScheduleBody.innerHTML = '';
+                let headerRow = '<tr><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>';
+                if(data.hasDate) headerRow += '<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>';
+                headerRow += '<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-principal">Opening Balance</th>';
+                headerRow += '<th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-withdrawal">Withdrawal</th>';
+                headerRow += '<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-interest">Interest Earned</th>';
+                headerRow += '<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider table-header-balance">Closing Balance</th></tr>';
+                swpScheduleThead.innerHTML = headerRow;
+
+                data.schedule.forEach(row => {
+                    let bodyRow = `<tr class="hover:bg-gray-50"><td class="px-4 py-2 text-sm font-medium text-gray-900">${row.month}</td>`;
+                    if(data.hasDate) bodyRow += `<td class="px-4 py-2 text-sm text-gray-500">${row.date}</td>`;
+                    bodyRow += `<td class="px-4 py-2 text-sm">${formatCurrency(row.openingBalance)}</td>`;
+                    bodyRow += `<td class="px-4 py-2 text-sm font-semibold">${formatCurrency(row.withdrawal)}</td>`;
+                    bodyRow += `<td class="px-4 py-2 text-sm font-semibold">${formatCurrency(row.interest)}</td>`;
+                    bodyRow += `<td class="px-4 py-2 text-sm font-bold text-green-700">${formatCurrency(row.closingBalance)}</td></tr>`;
+                    swpScheduleBody.innerHTML += bodyRow;
+                });
+
+                costBreakdownDiv.innerHTML = '';
+                addCostCircle('Total Investment', data.initialInvestment, 'cost-circle-principal', data.initialInvestment);
+                addCostCircle('Total Withdrawal', data.totalWithdrawn, 'cost-circle-total-withdrawal', data.initialInvestment);
+                addCostCircle('Interest Earned', data.totalInterestEarned, 'cost-circle-interest-earned', data.initialInvestment);
+                addCostCircle('Remaining Balance', data.remainingBalance, 'cost-circle-remaining-balance', data.initialInvestment);
+
+                showInvestmentResultsSections();
+            }
+
+
+            // --- UI Visibility and Event Handlers ---
+            function showMainCalculator(mainType) {
+                currentMainCalculatorType = mainType;
+                resetSummaryDisplay(); 
+                clearAllErrors();
+                mainTabButtons.forEach(button => button.classList.toggle('active', button.dataset.mainType === mainType));
+                
+                const isLoan = mainType === 'loan';
+                loanSubCategoryTabs.classList.toggle('hidden', !isLoan);
+                investmentSubCategoryTabs.classList.toggle('hidden', isLoan);
+
+                if (isLoan) {
+                    showLoanType(currentActiveLoanType);
+                } else {
+                    showInvestmentType(currentActiveInvestmentType);
+                }
+                masterCalculate();
+            }
+
+            function showLoanType(loanType) {
+                currentActiveLoanType = loanType;
+                resetSummaryDisplay();
+                clearAllErrors();
+                loanTabButtons.forEach(button => button.classList.toggle('active', button.dataset.loanType === loanType));
+                
+                // Show the main loan section, hide all investment sections
+                loanCalculatorSection.classList.remove('hidden');
+                fdCalculatorSection.classList.add('hidden');
+                rdCalculatorSection.classList.add('hidden');
+                swpCalculatorSection.classList.add('hidden');
+
+                cardDiscountDiv.classList.toggle('hidden', loanType !== 'no_cost_emi');
+                otherChargesDiv.classList.toggle('hidden', loanType !== 'no_cost_emi');
+
+                if(loanType === 'no_cost_emi') {
+                    loanAmountLabel.textContent = "Product Price (₹)";
+                    loanAmountInput.value = "100000";
+                    cardDiscountInput.value = "0";
+                    otherChargesInput.value = "0";
+                    annualInterestRateInput.value = "16";
+                    processingFeeTypeSelect.value = "standard-18flat";
+                } else if (loanType === 'reducing_interest') {
+                    loanAmountLabel.textContent = "Loan Amount (₹)";
+                    loanAmountInput.value = "20000";
+                    annualInterestRateInput.value = "18";
+                } else { // flat_interest
+                    loanAmountLabel.textContent = "Loan Amount (₹)";
+                    loanAmountInput.value = "20000";
+                    annualInterestRateInput.value = "16";
+                }
+                tenureSelect.value = "6";
+                
+                updateCustomInputVisibility();
+                masterCalculate();
+            }
+            
+            function showInvestmentType(investmentType) {
+                currentActiveInvestmentType = investmentType;
+                resetSummaryDisplay();
+                clearAllErrors();
+                investmentTabButtons.forEach(button => button.classList.toggle('active', button.dataset.investmentType === investmentType));
+
+                // Hide loan section, show the correct investment section
+                loanCalculatorSection.classList.add('hidden');
+                fdCalculatorSection.classList.toggle('hidden', investmentType !== 'fd');
+                rdCalculatorSection.classList.toggle('hidden', investmentType !== 'rd');
+                swpCalculatorSection.classList.toggle('hidden', investmentType !== 'swp');
+                
+                // Set defaults
+                if(investmentType === 'fd') {
+                    fdTenureValueInput.value = "1";
+                    fdTenureUnitSelect.value = "years";
+                } else if (investmentType === 'rd') {
+                    rdTenureMonthsInput.value = "12";
+                } else if (investmentType === 'swp') {
+                    swpTenureValueInput.value = "1";
+                    swpTenureUnitSelect.value = "years";
+                    swpMonthlyWithdrawalValueInput.value = "6";
+                    swpMonthlyWithdrawalUnitSelect.value = "percent";
+                }
+
+                masterCalculate();
+            }
+
+            function updateCustomInputVisibility() {
+                const selectedProcessingFeeType = processingFeeTypeSelect.value;
+                customPercentageInputDiv.classList.toggle('hidden', selectedProcessingFeeType !== 'custom-percentage');
+                customFlatInputDiv.classList.toggle('hidden', selectedProcessingFeeType !== 'custom-flat');
+                const selectedTenureType = tenureSelect.value;
+                customTenureInputDiv.classList.toggle('hidden', selectedTenureType !== 'custom');
+            }
+
+            function showLoanResultsSections() {
+                loanSummaryResults.classList.remove('hidden');
+                processingFeeMessage.classList.remove('hidden');
+                emiScheduleHeading.classList.remove('hidden');
+                emiScheduleContainer.classList.remove('hidden');
+                costBreakdownHeading.classList.remove('hidden');
+                costBreakdownDiv.classList.remove('hidden');
+                // Hide all investment results
+                fdRdSummaryResults.classList.add('hidden');
+                swpSummaryResults.classList.add('hidden');
+                investmentScheduleHeading.classList.add('hidden');
+                investmentScheduleContainer.classList.add('hidden');
+                swpScheduleHeading.classList.add('hidden');
+                swpScheduleContainer.classList.add('hidden');
+            }
+
+            function showInvestmentResultsSections() {
+                // Hide all loan results
+                loanSummaryResults.classList.add('hidden');
+                processingFeeMessage.classList.add('hidden');
+                emiScheduleHeading.classList.add('hidden');
+                emiScheduleContainer.classList.add('hidden');
+                noCostEmiDetailsContainer.classList.add('hidden');
+
+                const isSwp = currentActiveInvestmentType === 'swp';
+                swpSummaryResults.classList.toggle('hidden', !isSwp);
+                swpScheduleHeading.classList.toggle('hidden', !isSwp);
+                swpScheduleContainer.classList.toggle('hidden', !isSwp);
+                
+                const isFdRd = currentActiveInvestmentType === 'fd' || currentActiveInvestmentType === 'rd';
+                fdRdSummaryResults.classList.toggle('hidden', !isFdRd);
+                investmentScheduleHeading.classList.toggle('hidden', !isFdRd);
+                investmentScheduleContainer.classList.toggle('hidden', !isFdRd);
+                
+                costBreakdownHeading.classList.remove('hidden');
+                costBreakdownDiv.classList.remove('hidden');
+            }
+            
+            function addCostCircle(label, value, className, total) {
+                let percentage = (total > 0 && value > 0) ? (value / total) * 100 : 0;
+                const div = document.createElement('div');
+                div.classList.add('cost-circle', className);
+                div.innerHTML = `
+                    <span class="amount">${formatCurrency(value)}</span>
+                    <span class="percentage">(${percentage.toFixed(2)}%)</span>
+                    <span class="text-xs mt-1 block">${label}</span>
+                `;
+                costBreakdownDiv.appendChild(div);
+            }
+            
+            function populateDownloadableContent(data) {
+                downloadableContent.innerHTML = ''; 
+
+                let title = '';
+                let inputsHtml = '<div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6 border-b pb-6">';
+
+                if (data.type.includes('loan') || data.type.includes('emi')) {
+                    if(data.type === 'reducing_interest') title = "Reducing Interest Rate Loan Report";
+                    else if(data.type === 'no_cost_emi') {
+                        title = "No-Cost EMI Report";
+                        inputsHtml += `<div><p class="text-sm text-gray-500">Product Price</p><p class="font-bold text-lg">${formatCurrency(data.principal)}</p></div>`;
+                        inputsHtml += `<div><p class="text-sm text-gray-500">Card Discount</p><p class="font-bold text-lg">${formatCurrency(data.cardDiscount)}</p></div>`;
+                        inputsHtml += `<div><p class="text-sm text-gray-500">Other Charges</p><p class="font-bold text-lg">${formatCurrency(data.otherCharges)}</p></div>`;
+                    }
+                    else if(data.type === 'flat_interest') title = "Flat Interest Rate Loan Report";
+
+                    if (data.type !== 'no_cost_emi') {
+                      inputsHtml += `<div><p class="text-sm text-gray-500">Loan Amount</p><p class="font-bold text-lg">${formatCurrency(data.principal)}</p></div>`;
+                    }
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Annual Interest Rate</p><p class="font-bold text-lg">${data.annualInterestRate}%</p></div>`;
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Tenure</p><p class="font-bold text-lg">${data.tenureMonths} Months</p></div>`;
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Processing Fee</p><p class="font-bold text-lg">${data.processingFeeText}</p></div>`;
+                } else if (data.type === 'fd') {
+                    title = "Fixed Deposit (FD) Report";
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Deposit Amount</p><p class="font-bold text-lg">${formatCurrency(data.principal)}</p></div>`;
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Annual Interest Rate</p><p class="font-bold text-lg">${data.annualRate}%</p></div>`;
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Tenure</p><p class="font-bold text-lg">${data.tenureYears.toFixed(1)} Years (${data.tenureMonths.toFixed(0)} Months)</p></div>`;
+                } else if (data.type === 'rd') {
+                    title = "Recurring Deposit (RD) Report";
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Monthly Deposit</p><p class="font-bold text-lg">${formatCurrency(data.monthlyDeposit)}</p></div>`;
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Annual Interest Rate</p><p class="font-bold text-lg">${data.annualRate}%</p></div>`;
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Tenure</p><p class="font-bold text-lg">${data.tenureMonths} Months</p></div>`;
+                } else if (data.type === 'swp') {
+                    title = "Systematic Withdrawal Plan (SWP) Report";
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Initial Investment</p><p class="font-bold text-lg">${formatCurrency(data.initialInvestment)}</p></div>`;
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Monthly Withdrawal</p><p class="font-bold text-lg">${formatCurrency(data.monthlyWithdrawal)}</p></div>`;
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Annual Return Rate</p><p class="font-bold text-lg">${data.annualReturnRate}%</p></div>`;
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Tenure</p><p class="font-bold text-lg">${data.tenureYears.toFixed(1)} Years (${data.tenureMonths.toFixed(0)} Months)</p></div>`;
+                }
+                if (data.hasDate) {
+                    inputsHtml += `<div><p class="text-sm text-gray-500">Start Date</p><p class="font-bold text-lg">${data.startDate}</p></div>`;
+                    inputsHtml += `<div><p class="text-sm text-gray-500">End/Maturity Date</p><p class="font-bold text-lg">${data.endDate}</p></div>`;
+                }
+                inputsHtml += '</div>';
+
+                const reportTitle = `<h1 class="text-3xl font-bold text-center text-gray-800 mb-2">${title}</h1><p class="text-center text-gray-500 text-sm mb-6">Generated on: ${new Date().toLocaleString('en-IN')}</p>`;
+                
+                const summaryClone = resultsContainer.cloneNode(true);
+                summaryClone.querySelector('#resultsSummaryTitle').remove();
+                if(summaryClone.querySelector('#processingFeeMessage')) {
+                    summaryClone.querySelector('#processingFeeMessage').remove();
+                }
+
+                downloadableContent.innerHTML = reportTitle + inputsHtml + summaryClone.innerHTML;
+            }
+
+
+            // --- Download and Action Functions ---
+
+            async function downloadAs(format) {
+                actionsMenu.classList.add('hidden');
+                if (!currentSummaryData || !currentSummaryData.type) {
+                    openModal('Error', 'No data to download. Please calculate first.');
+                    return;
+                }
+                openModal(`Generating ${format.toUpperCase() === 'JPG' ? 'JPG' : 'PDF'}...`, 'Please wait while the file is being created.', true);
+                
+                const captureDivWrapper = document.getElementById('downloadable-content-wrapper');
+                const originalPosition = captureDivWrapper.style.position;
+                const originalLeft = captureDivWrapper.style.left;
+                
+                captureDivWrapper.style.position = 'relative';
+                captureDivWrapper.style.left = '0px';
+
+                try {
+                    const canvas = await html2canvas(downloadableContent, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+
+                    if (format === 'jpg') {
+                        const image = canvas.toDataURL('image/jpeg', 0.95);
+                        const link = document.createElement('a');
+                        link.href = image;
+                        link.download = `Financial_Report_${new Date().toISOString().slice(0,10)}.jpg`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    } else if (format === 'pdf') {
+                        const { jsPDF } = window.jspdf;
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdf = new jsPDF('p', 'mm', 'a4');
+                        const imgWidth = pdf.internal.pageSize.getWidth() - 20;
+                        const pageHeight = pdf.internal.pageSize.getHeight() - 20;
+                        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        let heightLeft = imgHeight;
+                        let position = 10;
+
+                        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                        heightLeft -= pageHeight;
+
+                        while (heightLeft > -1) {
+                            position = heightLeft - imgHeight + 10;
+                            pdf.addPage();
+                            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                            heightLeft -= pageHeight;
+                        }
+                        pdf.save(`Financial_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+                    }
+                } catch (err) {
+                    openModal('Error', `Could not generate ${format.toUpperCase()}. Please try again.`);
+                    console.error(err);
+                } finally {
+                    captureDivWrapper.style.position = originalPosition;
+                    captureDivWrapper.style.left = originalLeft;
+                    closeModal();
+                }
+            }
+
+
+            function downloadAsCsv(e) {
+                e.preventDefault();
+                actionsMenu.classList.add('hidden');
+                if (!currentSummaryData || !currentSummaryData.type) {
+                    openModal('Error', 'No data to download. Please calculate first.');
+                    return;
+                }
+
+                let summaryCsv = "";
+                const data = currentSummaryData;
+                const createCsvRow = (key, value) => `"${key}","${String(value).replace(/"/g, '""')}"\n`;
+
+                switch (data.type) {
+                    case 'reducing_interest':
+                    case 'flat_interest':
+                        let loanTypeLabel = data.type === 'reducing_interest' ? "Reducing Interest" : "Flat Interest";
+                        summaryCsv += createCsvRow("Calculator Type", loanTypeLabel);
+                        summaryCsv += createCsvRow('Loan Amount (INR)', data.principal.toFixed(2));
+                        summaryCsv += createCsvRow("Annual Interest Rate (%)", data.annualInterestRate.toFixed(2));
+                        summaryCsv += createCsvRow("Tenure (Months)", data.tenureMonths);
+                        summaryCsv += createCsvRow("Processing Fee Details", data.processingFeeText);
+                        if(data.hasDate) {
+                           summaryCsv += createCsvRow("Start Date", data.startDate);
+                           summaryCsv += createCsvRow("End Date", data.endDate);
+                        }
+                        summaryCsv += createCsvRow("Per Month EMI (INR)", data.perMonthEMI.toFixed(2));
+                        summaryCsv += createCsvRow("Total Interest incl. GST (INR)", data.totalInterest.toFixed(2));
+                        summaryCsv += createCsvRow("Total Processing Fee incl. GST (INR)", data.totalProcessingFee.toFixed(2));
+                        summaryCsv += createCsvRow("Total Extra Payment (INR)", data.totalExtraPayment.toFixed(2));
+                        summaryCsv += createCsvRow("Total Payment (INR)", data.totalPayment.toFixed(2));
+                        break;
+                    case 'no_cost_emi':
+                        summaryCsv += createCsvRow("Calculator Type", "No-Cost EMI");
+                        summaryCsv += createCsvRow('Product Price (INR)', data.principal.toFixed(2));
+                        summaryCsv += createCsvRow('Card Discount (INR)', data.cardDiscount.toFixed(2));
+                        summaryCsv += createCsvRow('Other Charges (INR)', data.otherCharges.toFixed(2));
+                        summaryCsv += createCsvRow('Upfront Discount (Bank) (INR)', data.upfrontDiscount.toFixed(2));
+                        summaryCsv += createCsvRow('Effective Loan Amount (INR)', data.effectiveLoanAmount.toFixed(2));
+                        summaryCsv += createCsvRow("Annual Interest Rate (%)", data.annualInterestRate.toFixed(2));
+                        summaryCsv += createCsvRow("Tenure (Months)", data.tenureMonths);
+                        if(data.hasDate) {
+                           summaryCsv += createCsvRow("Start Date", data.startDate);
+                           summaryCsv += createCsvRow("End Date", data.endDate);
+                        }
+                        summaryCsv += createCsvRow("Per Month EMI (INR)", data.perMonthEMI.toFixed(2));
+                        summaryCsv += createCsvRow("Total GST on Interest (INR)", (data.totalInterest - data.upfrontDiscount).toFixed(2));
+                        summaryCsv += createCsvRow("Total Processing Fee incl. GST (INR)", data.totalProcessingFee.toFixed(2));
+                        summaryCsv += createCsvRow("Total Extra Cost (GST+PF+Other) (INR)", data.totalExtraPayment.toFixed(2));
+                        break;
+                    case 'fd':
+                        summaryCsv += createCsvRow("Calculator Type", "Fixed Deposit");
+                        summaryCsv += createCsvRow("Deposit Amount (INR)", data.principal.toFixed(2));
+                        summaryCsv += createCsvRow("Annual Interest Rate (%)", data.annualRate.toFixed(2));
+                        summaryCsv += createCsvRow("Tenure (Years)", data.tenureYears.toFixed(1));
+                        if(data.hasDate) {
+                           summaryCsv += createCsvRow("Start Date", data.startDate);
+                           summaryCsv += createCsvRow("Maturity Date", data.endDate);
+                        }
+                        summaryCsv += createCsvRow("Interest Earned (INR)", data.interestEarned.toFixed(2));
+                        summaryCsv += createCsvRow("Maturity Amount (INR)", data.maturityAmount.toFixed(2));
+                        break;
+                    case 'rd':
+                        summaryCsv += createCsvRow("Calculator Type", "Recurring Deposit");
+                        summaryCsv += createCsvRow("Monthly Deposit (INR)", data.monthlyDeposit.toFixed(2));
+                        summaryCsv += createCsvRow("Annual Interest Rate (%)", data.annualRate.toFixed(2));
+                        summaryCsv += createCsvRow("Tenure (Months)", data.tenureMonths);
+                         if(data.hasDate) {
+                           summaryCsv += createCsvRow("Start Date", data.startDate);
+                           summaryCsv += createCsvRow("Maturity Date", data.endDate);
+                        }
+                        summaryCsv += createCsvRow("Total Deposited (INR)", data.totalDeposited.toFixed(2));
+                        summaryCsv += createCsvRow("Interest Earned (INR)", data.interestEarned.toFixed(2));
+                        summaryCsv += createCsvRow("Maturity Amount (INR)", data.maturityAmount.toFixed(2));
+                        break;
+                    case 'swp':
+                        summaryCsv += createCsvRow("Calculator Type", "Systematic Withdrawal Plan");
+                        summaryCsv += createCsvRow('Initial Investment (INR)', data.initialInvestment.toFixed(2));
+                        summaryCsv += createCsvRow('Monthly Withdrawal (INR)', data.monthlyWithdrawal.toFixed(2));
+                        summaryCsv += createCsvRow('Annual Return Rate (%)', data.annualReturnRate.toFixed(2));
+                        summaryCsv += createCsvRow('Tenure (Years)', data.tenureYears.toFixed(1));
+                        if(data.hasDate) {
+                           summaryCsv += createCsvRow("Start Date", data.startDate);
+                           summaryCsv += createCsvRow("End Date", data.endDate);
+                        }
+                        summaryCsv += createCsvRow('Total Amount Withdrawn (INR)', data.totalWithdrawn.toFixed(2));
+                        summaryCsv += createCsvRow('Total Interest Earned (INR)', data.totalInterestEarned.toFixed(2));
+                        summaryCsv += createCsvRow('Remaining Balance (INR)', data.remainingBalance.toFixed(2));
+                        break;
+                }
+                
+                summaryCsv += "\n";
+
+                if (!data.schedule || data.schedule.length === 0) {
+                    openModal('Error', 'No schedule data available to download.');
+                    return;
+                }
+                
+                const schedule = data.schedule;
+                const headers = Object.keys(schedule[0]).map(header => `"${header}"`);
+                let scheduleCsv = headers.join(",") + "\n";
+
+                schedule.forEach(row => {
+                    const values = Object.values(row).map(cell => {
+                        if (typeof cell === 'number') return cell.toFixed(2);
+                        if (typeof cell === 'string') return `"${cell.replace(/"/g, '""')}"`;
+                        return cell;
+                    });
+                    scheduleCsv += values.join(",") + "\n";
+                });
+
+                const csvContent = summaryCsv + scheduleCsv;
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `Financial_Calculation_Details_${new Date().toISOString().slice(0,10)}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    openModal('Download Complete!', 'The CSV file has been downloaded.');
+                } else {
+                    openModal('Error', 'Your browser does not support this feature.');
+                }
+            }
+            
+            function downloadSourceCode(e) {
+                e.preventDefault();
+                actionsMenu.classList.add('hidden');
+
+                try {
+                    const htmlContent = document.documentElement.outerHTML;
+                    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+                    const link = document.createElement("a");
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "financial-calculator.html");
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    openModal('Download Complete!', 'The HTML source code has been downloaded.');
+                } catch (err) {
+                    openModal('Download Error', 'An error occurred while trying to download the code.');
+                    console.error('Source code download failed: ', err);
+                }
+            }
+            
+            function downloadJsCode(e) {
+                e.preventDefault();
+                actionsMenu.classList.add('hidden');
+                try {
+                    const scriptElement = document.getElementById('calculator-script');
+                    if (!scriptElement) {
+                        openModal('Error', 'Could not find the script to download.');
+                        return;
+                    }
+                    const jsContent = scriptElement.innerHTML;
+                    const blob = new Blob([jsContent], { type: 'text/javascript;charset=utf-8;' });
+                    const link = document.createElement("a");
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "financial-calculator-script.js");
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    openModal('Download Complete!', 'The JavaScript code has been downloaded.');
+                } catch (err) {
+                    openModal('Download Error', 'An error occurred while trying to download the JS code.');
+                    console.error('JS code download failed: ', err);
+                }
+            }
+
+
+            // --- Initialization ---
+            setTodayDate();
+            [loanAmountInput, annualInterestRateInput, customPercentageFeeInput, customFlatFeeInput, customTenureInput, cardDiscountInput, otherChargesInput,
+             fdPrincipalInput, fdAnnualInterestRateInput, fdTenureValueInput, rdMonthlyDepositInput, rdAnnualInterestRateInput, rdTenureMonthsInput,
+             swpInvestmentAmountInput, swpMonthlyWithdrawalValueInput, swpAnnualReturnRateInput, swpTenureValueInput]
+            .forEach(setupFirstClickClear);
+
+            mainTabButtons.forEach(button => button.addEventListener('click', () => showMainCalculator(button.dataset.mainType)));
+            loanTabButtons.forEach(button => button.addEventListener('click', () => showLoanType(button.dataset.loanType)));
+            investmentTabButtons.forEach(button => button.addEventListener('click', () => showInvestmentType(button.dataset.investmentType)));
+            
+            tenureSelect.addEventListener('change', updateCustomInputVisibility);
+            processingFeeTypeSelect.addEventListener('change', updateCustomInputVisibility);
+            calculateButton.addEventListener('click', masterCalculate);
+            
+            // Actions Dropdown Listeners
+            actionsMenuButton.addEventListener('click', () => actionsMenu.classList.toggle('hidden'));
+            copySummaryTextButton.addEventListener('click', copySummary);
+            downloadJpgButton.addEventListener('click', (e) => {e.preventDefault(); downloadAs('jpg');});
+            downloadPdfButton.addEventListener('click', (e) => {e.preventDefault(); downloadAs('pdf');});
+            downloadSheetButton.addEventListener('click', downloadAsCsv);
+            downloadCodeButton.addEventListener('click', downloadSourceCode);
+            downloadJsButton.addEventListener('click', downloadJsCode);
+            
+            document.addEventListener('click', (event) => {
+                if (!actionsMenuButton.contains(event.target) && !actionsMenu.contains(event.target)) {
+                    actionsMenu.classList.add('hidden');
+                }
+            });
+
+            closeButton.addEventListener('click', closeModal);
+            myModal.addEventListener('click', (event) => { if (event.target === myModal) closeModal(); });
+
+            document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', clearAllErrors));
+
+            showMainCalculator('loan');
+        });
+    </script>
+
+
+</body></html>
